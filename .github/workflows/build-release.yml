@@ -30,8 +30,7 @@ jobs:
 
       - name: Create Zip File
         run: |
-          mv launch_gui.exe dist/
-          mv caption_openai.exe dist/
+          copy caption.yaml dist/
           powershell Compress-Archive -Path .\dist\*, dist/* -DestinationPath release.zip
 
       - name: Upload release Artifact
