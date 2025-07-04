@@ -1,25 +1,28 @@
 # Caption Generator GUI
 
-A user-friendly Gradio interface for the image captioning script.
+Rudimentary GUI for the caption script
 
 ## Features
 
-- **YAML Configuration Editor**: Edit your caption.yaml configuration directly in the GUI
-- **Dynamic Hint Sources**: Automatically detects available hint sources and provides checkboxes to enable/disable them
-- **Directory Selection**: Easy selection of base directory and recursive search options
+- **YAML Configuration Editor**: Edit your caption.yaml configuration directly in the GUI, alternative to the first tab with checkboxes, probably not recommended
+- **Dynamic Hint Sources**: Checkbox any additional metadata "hints"
+- **Directory Selection**: Select the directory to scan with optional recursive (subdirectory) inclusion
 - **Live Output**: Real-time display of script output during caption generation
 - **Process Control**: Start and stop caption generation processes
 - **Cross-platform**: Works on both Windows and Linux
 
 ## Installation
 
-1. Install the required dependencies:
+1. Install the required dependencies (one time)
    ```bash
+   python -m venv venv
+   .\venv\Scripts\activate.bat
    pip install -r requirements.txt
    ```
 
 2. Run the GUI:
    ```bash
+   .\venv\Scripts\activate.bat
    python caption_gui.py
    ```
 
@@ -45,27 +48,5 @@ A user-friendly Gradio interface for the image captioning script.
 
 ## Adding New Hint Sources
 
-To add a new hint source:
+If you can write basic Python or get an LLM to do it for you, see [HINTSOURCES.MD](HINTSOURCES.md)
 
-1. Add your hint function to `hints/hint_sources.py`
-2. Register it in `hints/registration.py` by adding it to:
-   - `HINT_FUNCTIONS` dictionary
-   - `get_available_hint_sources()` for display name
-   - `get_hint_source_descriptions()` for description
-
-The GUI will automatically detect and display the new hint source with a checkbox.
-
-## Architecture
-
-- **caption_gui.py**: Main GUI application using Gradio
-- **hints/registration.py**: Centralized hint source registration
-- **hints/hint_sources.py**: Individual hint source implementations
-- **caption_openai.py**: Original CLI script (unchanged)
-
-The original `caption_openai.py` script remains fully functional and can be run independently of the GUI.
-
-## Requirements
-
-- Python 3.8+
-- All packages listed in requirements.txt
-- Your existing caption.yaml configuration file

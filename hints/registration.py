@@ -11,7 +11,6 @@ from typing import Dict, Callable, Optional, Any
 # Cache for metadata to avoid re-reading
 _metadata_cache: Dict[str, Optional[Dict[str, Any]]] = {}
 
-
 def get_full_path_hint(image_path: str, **kwargs) -> str:
     """
     Returns hint text with the full path information.
