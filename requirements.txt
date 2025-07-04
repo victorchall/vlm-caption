@@ -1,0 +1,9 @@
+# Core dependencies for caption.py
+openai>=1.93.0
+pillow>=11.1.1
+aiofiles>=24.1.0
+omegaconf>=2.3.0
+
+# GUI dependencies
+gradio>=5.35.0
+PyYAML>=6.0.2
