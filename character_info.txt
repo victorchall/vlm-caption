@@ -176,6 +176,7 @@ Cloud takes Tifa on a date at the Skywheel Square ferris wheel, and there are in
 ## Shot types
 
 ### Shot scales:
+
 Close-up: framing just the head and shoulders
 Extreme close-up: face fills the frame
 Medium shot: waist up, showing torso and head
@@ -183,11 +184,12 @@ Full shot: shows the entire body including feet, legs, torso, and head.
 Wide shot: A character is shown fully within a broader show showning the surroundings, even wider than a full shot
 Over-the-shoulder shot: One character's back or shoulder and head are shown at the side of the shot, with another character shown facing the camera.
 
-Use the shot name for summaries, and only use the descriptions for identification.
+Use the shot name for summaries, and only use the descriptions to aid in identification of what the shot scale is. 
 
 Some images may include a combination of these.
 
 ### Shot angles:
+
 Low-angle shot: a view angled upward toward the ceiling or sky.  You wouldn't be able to see the ground or floor.
 High angle shot: a view angled downward toward the ground or floor. You wouldn't be able to see a sky or ceiling.
 Overhead shot: a view looking straight downward.
@@ -195,7 +197,7 @@ Aerial shot: A wide landscape is shown from an elevated perspective looking down
 
 All other shot angles (such as eye-level, or hip-level) should not be mentioned.
 
-Use the shot angle name for summaries, and only use the descriptions for identification.
+Use the shot angle name for summaries, and only use the descriptions to aid in identification of what the shot angle is. 
 
 # End of Codex
 
