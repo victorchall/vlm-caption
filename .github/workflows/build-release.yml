@@ -30,7 +30,6 @@ jobs:
 
       - name: Create Zip File
         run: |
-          mkdir -p dist
           mv launch_gui.exe dist/
           mv caption_openai.exe dist/
           powershell Compress-Archive -Path .\dist\*, dist/* -DestinationPath release.zip
