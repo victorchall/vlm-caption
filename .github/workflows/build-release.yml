@@ -1,0 +1,42 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build Executables
+        run: |
+          pip install pyinstaller
+          pyinstaller --onefile launch_gui.py
+          pyinstaller --onefile caption_openai.py
+
+      - name: Create Zip File
+        run: |
+          mkdir dist
+          mv launch_gui.exe dist/
+          mv caption_openai.exe dist/
+          powershell Compress-Archive -Path .\dist\*, dist/* -DestinationPath release.zip
+
+      - name: Upload release Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: release
+          path: release.zip
