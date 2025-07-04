@@ -32,7 +32,7 @@ jobs:
         run: |
           copy caption.yaml dist/
           copy character_info.txt dist/
-# powershell Compress-Archive -Path .\dist\*, dist/* -DestinationPath release.zip
+          powershell Compress-Archive -Path .\dist\* -DestinationPath release.zip
 
       - name: Upload release Artifact
         uses: actions/upload-artifact@v4
