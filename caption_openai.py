@@ -142,14 +142,16 @@ async def main():
         except openai.APIConnectionError as e:
             print(f"{e}\nAPI Error. Check that your service is running and captoin.yaml has the correct base_url")
         
-        aggregated_prompt_token_usage += prompt_token_usage
-        aggregated_completion_token_usage += aggregated_completion_token_usage
+        # aggregated_prompt_token_usage += prompt_token_usage
+        # aggregated_completion_token_usage += aggregated_completion_token_usage
 
         print(f" --> Final caption:\n{caption_text}")
         print(f" --> prompt_token_usage: {prompt_token_usage}, completion_token_usage: {completion_token_usage}")
         await save_caption(file_path=image_path, caption_text=caption_text, debug_info=chat_history)
     
-    print(F" -> JOB COMPLETE. aggregated_prompt_token_usage: {aggregated_prompt_token_usage}, aggregated_completion_token_usage: {aggregated_completion_token_usage}")
+    print(F" -> JOB COMPLETE.")
+    # not working?
+    #print(f"aggregated_prompt_token_usage: {aggregated_prompt_token_usage}, aggregated_completion_token_usage: {aggregated_completion_token_usage}")
 
 if __name__ == "__main__":
     asyncio.run(main())

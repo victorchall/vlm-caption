@@ -39,7 +39,8 @@ prompts:
 hint_sources:
   - full_path
   - json
+  - metadata
 
-base_directory: "R:/games/rebirth_screenshots_sdr"  # Path to start processing images (to be set by user)
+base_directory: "R:/games/rebirth_screenshots_sdr"
 recursive: false   # Enable/disable recursive directory traversal
 skip_if_txt_exists: true # don't overwrite if a .txt already exists

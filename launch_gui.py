@@ -32,7 +32,8 @@ def main():
     
     # Check dependencies
     if not check_dependencies():
-        input("Press Enter to exit...")
+        input("Dependencies could not be loaded. Something is wrong with install")
+        exit(1)
         return
     
     print("Starting GUI...")

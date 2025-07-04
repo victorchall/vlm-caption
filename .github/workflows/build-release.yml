@@ -25,16 +25,16 @@ jobs:
       - name: Build Executables
         run: |
           pip install pyinstaller
-          pyinstaller --onefile launch_gui.py
           pyinstaller --onefile caption_openai.py
 
       - name: Create Zip File
         run: |
           copy caption.yaml dist/
           copy character_info.txt dist/
+          copy *.MD dist/
 
       - name: Upload release Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release
+          name: vlm-caption
           path: dist/
