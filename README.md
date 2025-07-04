@@ -6,6 +6,17 @@ This is currently "beta" and features may change.
 
 A common use case would be to automate captioning large numbers of images for later text-to-image diffusion model training or classification tasks.
 
+Video app overview with install: [VLM Caption, multi-turn, data-driven image captioning](https://www.youtube.com/watch?v=WZ6zK7Tc0zs)
+
+## Install
+
+- See [API Service Setup](#API_Service_Setup) to install a VLM/LLM server of your choice.  LM Studio is extremely easy to install and use to manage models.
+
+- Visit https://github.com/victorchall/vlm-caption/actions, click on the most recent (top) workflow run, then under `Artifacts` click on `vlm-caption` to download the latest build.  Unzip it somewhere on your computer.
+
+- Edit the `caption.yaml` then run the `caption_openai.exe`.
+    - If you prefer, you can clone the repo, setup a venv or conda env, install requirements, then run with python. This is for users with some level of python/git experience only.
+
 ## Features
 
 - **Multi-turn Conversations**: Configure a series of prompts to guide the VLM through detailed image analysis
@@ -18,11 +29,6 @@ A common use case would be to automate captioning large numbers of images for la
 A GUI is a work-in-progress, but will not be much more than a simple wrapper to edit `caption.yaml`, thus low priority.
 
 ## Installation
-
-- See [API Service Setup](#API_Service_Setup) to install a VLM/LLM server of your choice.  LM Studio is extremely easy to install and use to manage models.
-- Visit https://github.com/victorchall/vlm-caption/actions, click on the most recent (top) workflow run, then under `Artifacts` click on `vlm-caption` to download the latest build.  Unzip it somewhere on your computer.
-- Edit the `caption.yaml` then run the `caption_openai.exe`.
-    - If you prefer, you can clone the repo, setup a venv or conda env, install requirements, then run with python. This is for users with some level of python/git experience only.
 
 ## Configuration
 
