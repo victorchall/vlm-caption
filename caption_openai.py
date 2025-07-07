@@ -8,8 +8,11 @@ from omegaconf import OmegaConf
 import os
 from file_utils.file_access import image_walk, save_caption
 from hints.hint_sources import get_hints
+from rag.rag import VectorDB
 import logging
 from typing import Tuple, Dict, List
+import time
+from openai.types.embedding import Embedding
 
 def remove_base64_image(messages: List) -> List:
     """ Removes the base64 image from a messages for the sake of logging """
@@ -40,11 +43,11 @@ def resolve_api_key(config):
 async def write_debug_messages(messages: List, i: int):
     async with aiofiles.open(f"messages_{i}.txt", "w") as f:
         await f.write(json.dumps(messages,indent=2))
+    
 
-async def process_image(client: openai.AsyncOpenAI, image_path, conf) -> Tuple[str,str,int,int]:
+async def process_image(client: openai.AsyncOpenAI, image_path, conf, vectordb: VectorDB) -> Tuple[str,str,int,int]:
     """Process a single image and generate caption using an OpenAI compatible API. 
     returns a tuple of: [final response, chat history obj, prompt_tokens_usage, completion_tokens_usage]"""
-    # Convert image to base64 string
     async with aiofiles.open(image_path, "rb") as image_file:
         file_contents = await image_file.read()
         b64_image = base64.b64encode(file_contents).decode("utf-8")
@@ -80,6 +83,12 @@ async def process_image(client: openai.AsyncOpenAI, image_path, conf) -> Tuple[s
             chunk = event.choices[0].delta.content
             #print(chunk, end="")
             response_text += chunk  # Accumulate the response text
+
+    top_k_match = await vectordb.get_top_n_matches(response_text, conf.rag.top_n)
+    print(f" --> RAG QUERY:\n{response_text}")
+    print(f" --> RAG TOP_K MATCHES:")
+    for x in top_k_match:
+        print(f"{x[1]:.3f}: {x[0]}")
 
     messages.append({"role": "assistant", "content": [{"type": "text", "text": response_text}]})
     i=0
@@ -132,21 +141,30 @@ async def main():
 
     client = openai.AsyncOpenAI(base_url=conf.base_url, api_key=api_key)
 
+    if conf.rag.embedding_model:
+        vectordb = VectorDB(client, conf)
+        await vectordb.parse_doc_and_add_embeddings_to_db(global_metadata)
+        print(f" ---> Embeddings saved for {conf.global_metadata_file}")
+
     aggregated_prompt_token_usage = 0
     aggregated_completion_token_usage = 0
 
     async for image_path in image_walk(conf.base_directory, recursive=conf.recursive, skip_if_txt_exists=conf.skip_if_txt_exists):
+        start_time = time.perf_counter()
         print(f"\nProcessing {image_path}")
         try:
-            caption_text, chat_history, prompt_token_usage, completion_token_usage = await process_image(client, image_path, conf)
+            caption_text, chat_history, prompt_token_usage, completion_token_usage = await process_image(client, image_path, conf, vectordb)
         except openai.APIConnectionError as e:
             print(f"{e}\nAPI Error. Check that your service is running and captoin.yaml has the correct base_url")
+            exit(1)
         
         # aggregated_prompt_token_usage += prompt_token_usage
         # aggregated_completion_token_usage += aggregated_completion_token_usage
 
-        print(f" --> Final caption:\n{caption_text}")
-        print(f" --> prompt_token_usage: {prompt_token_usage}, completion_token_usage: {completion_token_usage}")
+        stop_time = time.perf_counter()
+
+        print(f" --> Time spent: {stop_time-start_time:.2f}s,  Final caption:\n{caption_text}")
+        #print(f" --> prompt_token_usage: {prompt_token_usage}, completion_token_usage: {completion_token_usage}")
         await save_caption(file_path=image_path, caption_text=caption_text, debug_info=chat_history)
     
     print(F" -> JOB COMPLETE.")

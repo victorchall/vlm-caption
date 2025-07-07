@@ -41,6 +41,22 @@ hint_sources:
   - json
   - metadata
 
-base_directory: "R:/games/rebirth_screenshots_sdr"
+#base_directory: "R:/games/rebirth_screenshots_sdr"
+base_directory: "R:/games/ff7_test"
 recursive: false   # Enable/disable recursive directory traversal
-skip_if_txt_exists: true # don't overwrite if a .txt already exists
+skip_if_txt_exists: false # don't overwrite if a .txt already exists
+
+# If you want to use a RAG/vectordb approach to load relevant information
+# It will query vectordb for the closest matches basedon the FIRST prompt.
+# Useful if your global_metadata_file would be huge, instead load each descriptor into a separate .txt in docs_path
+rag: 
+  enabled: false # turn rag on or off.  Automatically disabled if docs_path contains nothing
+  embedding_model: text-embedding-granite-embedding-278m-multilingual
+  normalize: true # normalizes all embeddings, recommended
+  docs_path: "my_rag_docs"
+  top_n: 8  # how many "best match" documents to retrieve and place in context
+  linear_decay: true # for matryoshka models
+  linear_decay_end: 0.5 # final weight for linear decay
+  truncate_to_k: 1024 # for matryoshka models, occurs before linear decay
+  
+
