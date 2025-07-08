@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
+  const [apiPort, setApiPort] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState('');
   const [error, setError] = useState('');
@@ -67,11 +68,12 @@ function App() {
 
   // Load configuration from backend
   const loadConfig = async () => {
+    if (!apiPort) return;
     setConfigLoading(true);
     setConfigError('');
     
     try {
-      const response = await fetch('http://localhost:5000/api/config', {
+      const response = await fetch(`http://localhost:${apiPort}/api/config`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -103,12 +105,13 @@ function App() {
 
   // Save configuration to backend
   const saveConfig = async () => {
+    if (!apiPort) return;
     setConfigLoading(true);
     setConfigError('');
     setConfigSuccess('');
     
     try {
-      const response = await fetch('http://localhost:5000/api/config', {
+      const response = await fetch(`http://localhost:${apiPort}/api/config`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -174,17 +177,29 @@ function App() {
 
   // Load configuration on component mount
   useEffect(() => {
-    loadConfig();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (window.api) {
+      window.api.receive('set-api-port', (port) => {
+        console.log(`Received API port: ${port}`);
+        setApiPort(port);
+      });
+    }
   }, []);
 
+  useEffect(() => {
+    if (apiPort) {
+      loadConfig();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiPort]);
+
   const runCaptioning = async () => {
+    if (!apiPort) return;
     setIsRunning(true);
     setOutput('');
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/run', {
+      const response = await fetch(`http://localhost:${apiPort}/api/run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -4,10 +4,11 @@ const path = require('path');
 const fs = require('fs');
 const isDev = require('electron-is-dev');
 const waitOn = require('wait-on');
+const portfinder = require('portfinder');
 
 let mainWindow;
 let backendProcess;
-const BACKEND_PORT = 5000;
+let apiPort;
 
 // Create a log file for debugging
 const logDir = path.join(app.getPath('userData'), 'logs');
@@ -41,7 +42,8 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       enableRemoteModule: false,
-      webSecurity: true
+      webSecurity: true,
+      preload: path.join(__dirname, 'preload.js')
     },
     icon: path.join(__dirname, 'icon.ico'),
     show: false
@@ -70,17 +72,28 @@ function createWindow() {
 }
 
 function startBackend() {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     let backendPath;
     
     log('Starting backend process...');
+    
+    try {
+      apiPort = await portfinder.getPortPromise({
+        port: 5000,    // start searching from port 5000
+        stopPort: 6000 // stop searching at port 6000
+      });
+      log(`Found available port: ${apiPort}`);
+    } catch (err) {
+      log(`Could not find available port: ${err.message}`, 'ERROR');
+      return reject(err);
+    }
     
     if (isDev) {
       // In development, run the Flask app directly
       backendPath = path.join(__dirname, '../../app.py');
       log(`Development mode: Starting Python Flask app at ${backendPath}`);
       log(`Working directory: ${path.join(__dirname, '../..')}`);
-      backendProcess = spawn('python', [backendPath], {
+      backendProcess = spawn('python', [backendPath, '--port', apiPort], {
         cwd: path.join(__dirname, '../..')
       });
     } else {
@@ -99,7 +112,7 @@ function startBackend() {
         return;
       }
       
-      backendProcess = spawn(backendPath, [], {
+      backendProcess = spawn(backendPath, ['--port', apiPort], {
         cwd: path.join(resourcesPath, 'backend')
       });
     }
@@ -126,10 +139,10 @@ function startBackend() {
     });
 
     // Wait for the backend to be ready
-    // Use 127.0.0.1 instead of localhost to avoid DNS resolution issues
-    log(`Waiting for backend to be ready at http://127.0.0.1:${BACKEND_PORT}/api/health`);
+    // Use 127.0.0.1 instead of localhost to avoid DNS resolution issues (ip4/ip6 related)
+    log(`Waiting for backend to be ready at http://127.0.0.1:${apiPort}/api/health`);
     waitOn({
-      resources: [`http://127.0.0.1:${BACKEND_PORT}/api/health`],
+      resources: [`http://127.0.0.1:${apiPort}/api/health`],
       delay: 1000,
       interval: 100,
       timeout: 30000
@@ -205,6 +218,13 @@ app.whenReady().then(async () => {
     log('Backend started successfully, creating window...');
     // Then create the window
     createWindow();
+    
+    // Send the port to the renderer process
+    mainWindow.webContents.on('did-finish-load', () => {
+      log(`Sending API port to renderer: ${apiPort}`);
+      mainWindow.webContents.send('set-api-port', apiPort);
+    });
+    
     log('Window created successfully');
   } catch (error) {
     log(`Failed to start application: ${error.message}`, 'ERROR');
