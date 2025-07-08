@@ -4,9 +4,12 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build:
+  build-cli:
     runs-on: windows-latest
     steps:
       - name: Checkout code
@@ -21,20 +24,109 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install -r requirements-build.txt
 
-      - name: Build Executables
+      - name: Build CLI Executable
         run: |
-          pip install pyinstaller
           pyinstaller --onefile caption_openai.py
 
-      - name: Create Zip File
+      - name: Create CLI Package
         run: |
-          copy caption.yaml dist/
-          copy character_info.txt dist/
-          copy *.MD dist/
+          mkdir vlm-caption-cli
+          copy dist\caption_openai.exe vlm-caption-cli\
+          copy caption.yaml vlm-caption-cli\
+          copy character_info.txt vlm-caption-cli\
+          copy *.MD vlm-caption-cli\
+          powershell Compress-Archive -Path vlm-caption-cli\* -DestinationPath vlm-caption-cli.zip
 
-      - name: Upload release Artifact
+      - name: Upload CLI Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vlm-caption
-          path: dist/
+          name: vlm-caption-cli
+          path: vlm-caption-cli.zip
+
+  build-electron:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-build.txt
+
+      - name: Install Node.js dependencies
+        run: |
+          cd ui
+          npm install
+
+      - name: Build Electron App
+        timeout-minutes: 30
+        run: |
+          cd ui
+          echo "Starting Electron build process..."
+          echo "Step 1: Building backend..."
+          npm run build:backend
+          echo "Step 2: Building React app..."
+          npm run build
+          echo "Step 3: Building Electron installer..."
+          npx electron-builder --win --publish=never
+          echo "Electron build completed!"
+
+      - name: Upload Electron Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vlm-caption-electron
+          path: ui/dist/*.exe
+
+  create-release:
+    needs: [build-cli, build-electron]
+    runs-on: windows-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download CLI Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vlm-caption-cli
+
+      - name: Download Electron Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vlm-caption-electron
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.run_number }}
+          name: VLM Caption v${{ github.run_number }}
+          body: |
+            Automated release containing both CLI and GUI versions of VLM Caption.
+            
+            📦 **Downloads:**
+            - `vlm-caption-cli.zip` - Command-line version
+            - `VLM Caption Setup *.exe` - GUI version (Windows installer)
+            
+            🚀 **What's New:**
+            - Latest updates from commit ${{ github.sha }}
+          files: |
+            vlm-caption-cli.zip
+            *.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

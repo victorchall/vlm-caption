@@ -4,6 +4,6 @@ pillow>=11.1.1
 aiofiles>=24.1.0
 omegaconf>=2.3.0
 
-# GUI dependencies
-gradio>=5.35.0
-PyYAML>=6.0.2
+# GUI app dependencies
+Flask>=2.3.0
+Flask-Cors>=4.0.0

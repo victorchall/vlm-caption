@@ -1,4 +1,3 @@
-
 ## Here is a character codex to aid in identifying characters from Final Fantasy VII Rebrith:
 
 Cloud Strife has spiky blond hair and piercing blue eyes, often clad in his iconic SOLDIER uniform. He has toned, somewhat muscular arms. His SOLDIER uniform consists of a bluish-purple sleeveless turtleneck sweater, a metal spaulder with bolts on his left shoulder, baggy blue pants, black combat boots, and black leather gauntlets. He is often seen with his signature Buster sword, which is extremely large with a very broad blade. His buster sword is most often worn on his back when he is not in combat. He is 21 years old and 5'8" tall. Some scenes may show Cloud as a teenager, wearing a white t-shirt but his signature spikey blonde hair remains the same. For beach attire he goes shirtless with dark grey board shorts, along with a black belt that has silver buttons on it.
@@ -99,7 +98,7 @@ Chocobos are large birds that characters sometimes ride. They are taller and lar
 
 Baby chocobos are only about half the height of humans, have large heads in proportion to their bodies, and have half-coconut shells on their backsides. They are always yellow.
 
-Shinra Commander is a female character that is a high ranking military leader. She wears a red military uniform broad lapel, gold piping,  gold tassles on the shoulders, and a red captain's hat with a black rim and gold emellishments. Her hair is blonde and fairly short.  Her subordinate officers wear bright blue uniforms with blue caps. 
+Shinra Commander is a female character that is a high ranking military leader. She wears a red military uniform with a broad lapel, gold piping, gold tassles on the shoulders, and a red captain's hat with a black rim and gold emellishments. Her hair is blonde and fairly short.  Her subordinate officers wear bright blue uniforms with blue caps. 
 
 Shinra Security Officers wear a light grey helmet with 3 red or orange lights on the front top and their eyes are obscured by the helmet. They also wear light grey spaulders and blue fatigues.  Sometimes Cloud, Tifa, and Aerith may wear a Shinra Security Gaurd uniform.
 
@@ -109,13 +108,13 @@ Shinra Elite Security Officers wear a light grey helm with two red lightson eith
 
 Other Shinra infrantry units vary in coloring, but the 3 red lights on the helmet is the distinctive feature.
 
-Glenn Lodbrok is a charater with tossled blonde hair, a short beard, and wears a black cloak. He appears to be in his 30s or 40s.
+Glenn Lodbrok is a male character with tossled blonde hair, a short beard, and wears a black cloak. He appears to be in his 30s or 40s.
 
 Kid G is a gnome or goblin like character who wears red boxing gloves, a yellow vest, green shots, purple and white sneakers, and a black cap. He has very long pointy ears and a long pointy nose. He is about 3' tall.
 
 Cactuar are cactus characters with a signature pose of having their arms and legs bent at 90 degree angles. Most are green, but some are different colors. Their faces include round eyes and an oval mouth.
 
-Tonberry are toy-like characters with bald, bright-green, spherical heads wearing simple biege cloaks. They wield a dagger or knife.
+Tonberry are toy-like characters with bald, bright-green, spherical heads wearing simple biege cloaks. They wield a dagger or knife  in one hand and also carry a lantern in the other hand.
 
 ## Locations in Final Fantasy vII Rebirth:
 
@@ -173,30 +172,22 @@ Loveless opera is an opera in which Cloud, Aerith, Tifa, Jessie Rasberry, Barret
 
 Cloud takes Tifa on a date at the Skywheel Square ferris wheel, and there are interior shots of the gondola they ride in, at times with fireworks in the background.
 
-## Shot types
-
 ### Shot scales:
-
 Close-up: framing just the head and shoulders
 Extreme close-up: face fills the frame
 Medium shot: waist up, showing torso and head
 Full shot: shows the entire body including feet, legs, torso, and head.
 Wide shot: A character is shown fully within a broader show showning the surroundings, even wider than a full shot
 Over-the-shoulder shot: One character's back or shoulder and head are shown at the side of the shot, with another character shown facing the camera.
-
 Use the shot name for summaries, and only use the descriptions to aid in identification of what the shot scale is. 
-
 Some images may include a combination of these.
 
 ### Shot angles:
-
 Low-angle shot: a view angled upward toward the ceiling or sky.  You wouldn't be able to see the ground or floor.
 High angle shot: a view angled downward toward the ground or floor. You wouldn't be able to see a sky or ceiling.
 Overhead shot: a view looking straight downward.
 Aerial shot: A wide landscape is shown from an elevated perspective looking down. This is typically reserved for wide perspectives of landscapes, whereas high angle shot is used for shots with characters
-
 All other shot angles (such as eye-level, or hip-level) should not be mentioned.
-
 Use the shot angle name for summaries, and only use the descriptions to aid in identification of what the shot angle is. 
 
 # End of Codex
