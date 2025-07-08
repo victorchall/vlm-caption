@@ -63,38 +63,9 @@ def get_status():
 def health_check():
     return jsonify({'status': 'healthy'})
 
-def show_help():
-    """Display help information and exit."""
-    help_text = """
-VLM Caption Flask Backend
-
-Usage: app.exe [OPTIONS]
-
-Options:
-  --help    Show this help message and exit
-
-This is the Flask backend server for VLM Caption.
-When run without arguments, starts the server on http://localhost:5000
-
-API Endpoints:
-  POST /api/run     - Run captioning process
-  GET  /api/status  - Check captioning status
-  GET  /api/health  - Health check
-
-The server provides a REST API interface for the VLM Caption functionality.
-"""
-    print(help_text.strip())
-    sys.exit(0)
-
 if __name__ == '__main__':
-    # Check for command line arguments
-    if len(sys.argv) > 1:
-        if sys.argv[1] == '--help' or sys.argv[1] == '-h':
-            show_help()
-        else:
-            print(f"Unknown argument: {sys.argv[1]}")
-            print("Use --help for usage information")
-            sys.exit(1)
-    
-    # Start the Flask server
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("--port", type=int, default=5000)
+    args = argparser.parse_args()
+
+    app.run(debug=True, host='0.0.0.0', port=args.port)
