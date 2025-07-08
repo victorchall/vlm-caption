@@ -1,4 +1,15 @@
 /venv/
-__pycache__
+__pycache__/
 /build/
 /dist/
+node_modules/
+messages_*.txt
+
+# Electron and Node.js build artifacts
+ui/node_modules/
+ui/build/
+ui/dist/
+ui/public/backend/
+
+# PyInstaller spec files
+*.spec
