@@ -55,10 +55,11 @@ function startBackend() {
         cwd: path.join(__dirname, '../..')
       });
     } else {
-      // In production, run the packaged executable
-      backendPath = path.join(__dirname, 'backend', 'app.exe');
+      // In production, run the packaged executable from resources directory
+      const resourcesPath = process.resourcesPath;
+      backendPath = path.join(resourcesPath, 'backend', 'app.exe');
       backendProcess = spawn(backendPath, [], {
-        cwd: path.join(__dirname, 'backend')
+        cwd: path.join(resourcesPath, 'backend')
       });
     }
 

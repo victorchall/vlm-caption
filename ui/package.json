@@ -53,8 +53,13 @@
     },
     "files": [
       "build/**/*",
-      "public/electron.js",
-      "public/backend/**/*"
+      "public/electron.js"
+    ],
+    "extraResources": [
+      {
+        "from": "public/backend",
+        "to": "backend"
+      }
     ],
     "extraMetadata": {
       "name": "vlm-caption"
