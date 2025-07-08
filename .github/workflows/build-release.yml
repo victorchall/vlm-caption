@@ -27,7 +27,6 @@ jobs:
 
       - name: Build CLI Executable
         run: |
-          pip install pyinstaller
           pyinstaller --onefile caption_openai.py
 
       - name: Create CLI Package

@@ -7,3 +7,6 @@ omegaconf>=2.3.0
 # GUI app dependencies
 Flask>=2.3.0
 Flask-Cors>=4.0.0
+
+# Build dependencies
+pyinstaller>=5.0.0
