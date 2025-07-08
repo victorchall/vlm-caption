@@ -5,6 +5,9 @@ import threading
 import io
 import sys
 import argparse
+import yaml
+import json
+import os
 from caption_openai import main as caption_main
 
 app = Flask(__name__)
@@ -62,6 +65,77 @@ def get_status():
 @app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'healthy'})
+
+@app.route('/api/config', methods=['GET'])
+def get_config():
+    """Get current configuration from caption.yaml"""
+    try:
+        config_path = 'caption.yaml'
+        
+        # Check if config file exists
+        if not os.path.exists(config_path):
+            return jsonify({'error': 'Configuration file not found'}), 404
+        
+        # Load YAML configuration
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+        
+        return jsonify({
+            'success': True,
+            'config': config
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Failed to load configuration: {str(e)}'
+        }), 500
+
+@app.route('/api/config', methods=['POST'])
+def update_config():
+    """Update configuration and save to caption.yaml"""
+    try:
+        # Get JSON data from request
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No configuration data provided'}), 400
+        
+        new_config = data.get('config')
+        if not new_config:
+            return jsonify({'error': 'No config object provided'}), 400
+        
+        config_path = 'caption.yaml'
+        
+        # Read current configuration
+        current_config = {}
+        if os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as f:
+                current_config = yaml.safe_load(f) or {}
+            
+            # Create backup of current config
+            backup_path = f"{config_path}.backup"
+            with open(config_path, 'r', encoding='utf-8') as src, open(backup_path, 'w', encoding='utf-8') as dst:
+                dst.write(src.read())
+        
+        # Merge new config with existing config
+        merged_config = current_config.copy()
+        merged_config.update(new_config)
+        
+        # Save merged configuration to YAML
+        with open(config_path, 'w', encoding='utf-8') as f:
+            yaml.dump(merged_config, f, default_flow_style=False, sort_keys=False)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Configuration updated successfully'
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Failed to update configuration: {str(e)}'
+        }), 500
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser()

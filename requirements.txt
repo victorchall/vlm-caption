@@ -7,3 +7,4 @@ omegaconf>=2.3.0
 # GUI app dependencies
 Flask>=2.3.0
 Flask-Cors>=4.0.0
+PyYAML>=6.0
