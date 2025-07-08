@@ -56,15 +56,25 @@
       "public/electron.js",
       "public/backend/**/*"
     ],
+    "extraMetadata": {
+      "name": "vlm-caption"
+    },
+    "compression": "store",
+    "npmRebuild": false,
+    "buildDependenciesFromSource": false,
     "win": {
-      "target": "nsis",
+      "target": {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
       "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "differentialPackage": false
     }
   }
 }

@@ -73,9 +73,17 @@ jobs:
           npm install
 
       - name: Build Electron App
+        timeout-minutes: 30
         run: |
           cd ui
-          npm run build:electron
+          echo "Starting Electron build process..."
+          echo "Step 1: Building backend..."
+          npm run build:backend
+          echo "Step 2: Building React app..."
+          npm run build
+          echo "Step 3: Building Electron installer..."
+          npx electron-builder --win --publish=never
+          echo "Electron build completed!"
 
       - name: Upload Electron Artifact
         uses: actions/upload-artifact@v4

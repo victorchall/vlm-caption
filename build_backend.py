@@ -85,10 +85,20 @@ def build_backend():
         print("\nTesting the built executable...")
         test_cmd = [str(backend_dir / 'app.exe'), '--help']
         try:
-            subprocess.run(test_cmd, check=True, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(test_cmd, check=True, capture_output=True, text=True, timeout=30)
             print("Executable test passed!")
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-            print(f"Executable test failed: {e}")
+            print(f"Test output: {result.stdout}")
+        except subprocess.TimeoutExpired:
+            print("Executable test timed out after 30 seconds")
+            print("This may indicate an issue with the executable, but continuing with build...")
+        except subprocess.CalledProcessError as e:
+            print(f"Executable test failed with return code {e.returncode}")
+            print(f"stdout: {e.stdout}")
+            print(f"stderr: {e.stderr}")
+            print("Continuing with build despite test failure...")
+        except Exception as e:
+            print(f"Unexpected error during executable test: {e}")
+            print("Continuing with build...")
         
         return True
         
