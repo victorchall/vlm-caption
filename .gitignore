@@ -13,3 +13,4 @@ ui/public/backend/
 
 # PyInstaller spec files
 *.spec
+.env
