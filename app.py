@@ -68,4 +68,6 @@ if __name__ == '__main__':
     argparser.add_argument("--port", type=int, default=5000)
     args = argparser.parse_args()
 
-    app.run(debug=True, host='0.0.0.0', port=args.port)
+    # Only enable debug mode if running from source (not packaged)
+    debug_mode = not getattr(sys, 'frozen', False)
+    app.run(debug=debug_mode, host='0.0.0.0', port=args.port)

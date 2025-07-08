@@ -126,9 +126,10 @@ function startBackend() {
     });
 
     // Wait for the backend to be ready
-    log(`Waiting for backend to be ready at http://localhost:${BACKEND_PORT}/api/health`);
+    // Use 127.0.0.1 instead of localhost to avoid DNS resolution issues
+    log(`Waiting for backend to be ready at http://127.0.0.1:${BACKEND_PORT}/api/health`);
     waitOn({
-      resources: [`http://localhost:${BACKEND_PORT}/api/health`],
+      resources: [`http://127.0.0.1:${BACKEND_PORT}/api/health`],
       delay: 1000,
       interval: 100,
       timeout: 30000
