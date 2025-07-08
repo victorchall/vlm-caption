@@ -1,12 +1,37 @@
 const { app, BrowserWindow, dialog } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 const isDev = require('electron-is-dev');
 const waitOn = require('wait-on');
 
 let mainWindow;
 let backendProcess;
 const BACKEND_PORT = 5000;
+
+// Create a log file for debugging
+const logDir = path.join(app.getPath('userData'), 'logs');
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true });
+}
+const logFile = path.join(logDir, 'electron-debug.log');
+
+// Enhanced logging function
+function log(message, level = 'INFO') {
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${timestamp}] [${level}] ${message}\n`;
+  
+  // Write to file
+  fs.appendFileSync(logFile, logMessage);
+  
+  // Also log to console (for development)
+  console.log(`[${level}] ${message}`);
+}
+
+// Initialize log file
+log('=== Electron App Starting ===');
+log(`isDev: ${isDev}`);
+log(`Log file location: ${logFile}`);
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -48,9 +73,13 @@ function startBackend() {
   return new Promise((resolve, reject) => {
     let backendPath;
     
+    log('Starting backend process...');
+    
     if (isDev) {
       // In development, run the Flask app directly
       backendPath = path.join(__dirname, '../../app.py');
+      log(`Development mode: Starting Python Flask app at ${backendPath}`);
+      log(`Working directory: ${path.join(__dirname, '../..')}`);
       backendProcess = spawn('python', [backendPath], {
         cwd: path.join(__dirname, '../..')
       });
@@ -58,39 +87,57 @@ function startBackend() {
       // In production, run the packaged executable from resources directory
       const resourcesPath = process.resourcesPath;
       backendPath = path.join(resourcesPath, 'backend', 'app.exe');
+      log(`Production mode: Starting executable at ${backendPath}`);
+      log(`Working directory: ${path.join(resourcesPath, 'backend')}`);
+      log(`Resources path: ${resourcesPath}`);
+      
+      // Check if the executable exists
+      if (!fs.existsSync(backendPath)) {
+        const error = new Error(`Backend executable not found at ${backendPath}`);
+        log(`ERROR: ${error.message}`, 'ERROR');
+        reject(error);
+        return;
+      }
+      
       backendProcess = spawn(backendPath, [], {
         cwd: path.join(resourcesPath, 'backend')
       });
     }
 
+    log(`Backend process spawned with PID: ${backendProcess.pid}`);
+
     backendProcess.stdout.on('data', (data) => {
-      console.log(`Backend stdout: ${data}`);
+      log(`Backend stdout: ${data.toString().trim()}`);
     });
 
     backendProcess.stderr.on('data', (data) => {
-      console.log(`Backend stderr: ${data}`);
+      log(`Backend stderr: ${data.toString().trim()}`, 'WARN');
     });
 
     backendProcess.on('error', (error) => {
-      console.error('Failed to start backend:', error);
+      log(`Backend spawn error: ${error.message}`, 'ERROR');
+      log(`Error code: ${error.code}`, 'ERROR');
+      log(`Error path: ${error.path}`, 'ERROR');
       reject(error);
     });
 
     backendProcess.on('close', (code) => {
-      console.log(`Backend process exited with code ${code}`);
+      log(`Backend process exited with code ${code}`, code === 0 ? 'INFO' : 'WARN');
     });
 
     // Wait for the backend to be ready
+    log(`Waiting for backend to be ready at http://localhost:${BACKEND_PORT}/api/health`);
     waitOn({
       resources: [`http://localhost:${BACKEND_PORT}/api/health`],
       delay: 1000,
       interval: 100,
       timeout: 30000
     }).then(() => {
-      console.log('Backend is ready');
+      log('Backend is ready and responding to health checks');
       resolve();
     }).catch((error) => {
-      console.error('Backend failed to start:', error);
+      log(`Backend failed to start within timeout: ${error.message}`, 'ERROR');
+      log(`waitOn error details: ${JSON.stringify(error)}`, 'ERROR');
       reject(error);
     });
   });
@@ -98,7 +145,7 @@ function startBackend() {
 
 function stopBackend() {
   if (backendProcess) {
-    console.log('Stopping backend process...');
+    log('Stopping backend process...');
     backendProcess.kill();
     backendProcess = null;
   }
@@ -106,14 +153,23 @@ function stopBackend() {
 
 app.whenReady().then(async () => {
   try {
+    log('App ready, starting backend...');
     // Start the backend first
     await startBackend();
     
+    log('Backend started successfully, creating window...');
     // Then create the window
     createWindow();
+    log('Window created successfully');
   } catch (error) {
-    console.error('Failed to start application:', error);
-    dialog.showErrorBox('Startup Error', 'Failed to start the backend server. Please check the logs.');
+    log(`Failed to start application: ${error.message}`, 'ERROR');
+    log(`Error stack: ${error.stack}`, 'ERROR');
+    
+    // Show error dialog with log file location
+    dialog.showErrorBox(
+      'Startup Error', 
+      `Failed to start the backend server.\n\nPlease check the logs at:\n${logFile}\n\nError: ${error.message}`
+    );
     app.quit();
   }
 
@@ -125,6 +181,7 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
+  log('All windows closed, stopping backend...');
   stopBackend();
   if (process.platform !== 'darwin') {
     app.quit();
@@ -132,10 +189,11 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  log('App quitting, stopping backend...');
   stopBackend();
 });
 
 // Handle any unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  log(`Unhandled Rejection at: ${promise}, reason: ${reason}`, 'ERROR');
 });
