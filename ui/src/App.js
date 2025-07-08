@@ -9,11 +9,61 @@ function App() {
   const [config, setConfig] = useState({
     base_url: '',
     model: '',
-    api_key: ''
+    api_key: '',
+    prompts: []
   });
   const [configLoading, setConfigLoading] = useState(false);
   const [configError, setConfigError] = useState('');
   const [configSuccess, setConfigSuccess] = useState('');
+  const [models, setModels] = useState([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [modelsError, setModelsError] = useState('');
+
+  // Fetch models from base_url
+  const fetchModels = async (baseUrl) => {
+    if (!baseUrl) {
+      setModels([]);
+      return;
+    }
+
+    setModelsLoading(true);
+    setModelsError('');
+    
+    try {
+      // Ensure the URL has a scheme
+      let url = baseUrl;
+      if (!/^https?:\/\//i.test(url)) {
+        url = 'http://' + url;
+      }
+      
+      // Construct the models URL
+      const modelsUrl = new URL('v1/models', url).toString();
+      
+      const response = await fetch(modelsUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch models: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+
+      if (data.data && Array.isArray(data.data)) {
+        const modelIds = data.data.map(m => m.id);
+        setModels(modelIds);
+      } else {
+        setModelsError('Unexpected response format from models endpoint');
+      }
+    } catch (err) {
+      setModelsError(`Failed to fetch models: ${err.message}`);
+    } finally {
+      setModelsLoading(false);
+    }
+  };
 
   // Load configuration from backend
   const loadConfig = async () => {
@@ -31,11 +81,16 @@ function App() {
       const data = await response.json();
 
       if (data.success) {
-        setConfig({
+        const newConfig = {
           base_url: data.config.base_url || '',
           model: data.config.model || '',
-          api_key: data.config.api_key || ''
-        });
+          api_key: data.config.api_key || '',
+          prompts: data.config.prompts || ['']
+        };
+        setConfig(newConfig);
+        if (newConfig.base_url) {
+          fetchModels(newConfig.base_url);
+        }
       } else {
         setConfigError(data.error || 'Failed to load configuration');
       }
@@ -62,7 +117,8 @@ function App() {
           config: {
             base_url: config.base_url,
             model: config.model,
-            api_key: config.api_key
+            api_key: config.api_key,
+            prompts: config.prompts
           }
         }),
       });
@@ -70,8 +126,8 @@ function App() {
       const data = await response.json();
 
       if (data.success) {
-        setConfigSuccess('Configuration saved successfully!');
-        setTimeout(() => setConfigSuccess(''), 3000);
+        setConfigSuccess(data.message);
+        setTimeout(() => setConfigSuccess(''), 10000);
       } else {
         setConfigError(data.error || 'Failed to save configuration');
       }
@@ -84,15 +140,42 @@ function App() {
 
   // Handle input changes
   const handleConfigChange = (field, value) => {
-    setConfig(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setConfig(prev => {
+      const newConfig = { ...prev, [field]: value };
+      
+      // If base_url changes, clear models and selected model, then fetch new models
+      if (field === 'base_url') {
+        setModels([]);
+        newConfig.model = '';
+        fetchModels(value);
+      }
+      
+      return newConfig;
+    });
+  };
+
+  // Handle prompt changes
+  const handlePromptChange = (index, value) => {
+    const newPrompts = [...config.prompts];
+    newPrompts[index] = value;
+    handleConfigChange('prompts', newPrompts);
+  };
+
+  // Add a new prompt
+  const addPrompt = () => {
+    handleConfigChange('prompts', [...config.prompts, '']);
+  };
+
+  // Remove a prompt
+  const removePrompt = (index) => {
+    const newPrompts = config.prompts.filter((_, i) => i !== index);
+    handleConfigChange('prompts', newPrompts);
   };
 
   // Load configuration on component mount
   useEffect(() => {
     loadConfig();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const runCaptioning = async () => {
@@ -130,17 +213,18 @@ function App() {
         {/* Tab Navigation */}
         <div className="tab-navigation">
           <button 
-            className={`tab-button ${activeTab === 'run' ? 'active' : ''}`}
-            onClick={() => setActiveTab('run')}
-          >
-            Run Captioning
-          </button>
-          <button 
             className={`tab-button ${activeTab === 'config' ? 'active' : ''}`}
             onClick={() => setActiveTab('config')}
           >
             Configuration
           </button>
+          <button 
+            className={`tab-button ${activeTab === 'run' ? 'active' : ''}`}
+            onClick={() => setActiveTab('run')}
+          >
+            Run Captioning
+          </button>
+
         </div>
 
         {/* Run Tab */}
@@ -206,13 +290,32 @@ function App() {
 
               <div className="form-group">
                 <label htmlFor="model">Model:</label>
-                <input
-                  type="text"
-                  id="model"
-                  value={config.model}
-                  onChange={(e) => handleConfigChange('model', e.target.value)}
-                  placeholder="e.g., gpt-4o-mini"
-                />
+                <div className="model-selection">
+                  <select
+                    id="model"
+                    value={config.model}
+                    onChange={(e) => handleConfigChange('model', e.target.value)}
+                    disabled={modelsLoading || !config.base_url}
+                  >
+                    <option value="">
+                      {config.base_url ? 'Select a model' : 'Enter Base URL first'}
+                    </option>
+                    {models.map(modelId => (
+                      <option key={modelId} value={modelId}>
+                        {modelId}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => fetchModels(config.base_url)}
+                    disabled={modelsLoading || !config.base_url}
+                    className="reload-button"
+                  >
+                    {modelsLoading ? '...' : 'Refresh'}
+                  </button>
+                </div>
+                {modelsError && <p className="error-text">{modelsError}</p>}
               </div>
 
               <div className="form-group">
@@ -224,6 +327,34 @@ function App() {
                   onChange={(e) => handleConfigChange('api_key', e.target.value)}
                   placeholder="Leave empty for local models"
                 />
+              </div>
+
+              <div className="form-group">
+                <label>Prompts:</label>
+                {config.prompts.map((prompt, index) => (
+                  <div key={index} className="prompt-item">
+                    <textarea
+                      value={prompt}
+                      onChange={(e) => handlePromptChange(index, e.target.value)}
+                      placeholder={`Prompt ${index + 1}`}
+                      rows="3"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => removePrompt(index)}
+                      className="remove-prompt-button"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+                <button 
+                  type="button" 
+                  onClick={addPrompt}
+                  className="add-prompt-button"
+                >
+                  Add Prompt
+                </button>
               </div>
 
               <div className="form-actions">

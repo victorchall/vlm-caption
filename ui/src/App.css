@@ -141,7 +141,8 @@
   color: #ffffff;
 }
 
-.form-group input {
+.form-group input,
+.form-group textarea {
   width: 100%;
   padding: 10px;
   border: 1px solid #ced4da;
@@ -224,4 +225,86 @@
 .success p {
   margin: 0;
   font-weight: bold;
+}
+
+/* Prompt Styling */
+.prompt-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.prompt-item textarea {
+  flex-grow: 1;
+  resize: vertical;
+}
+
+.remove-prompt-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  width: 30px;
+  height: 30px;
+  font-size: 1.2rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 2px;
+}
+
+.remove-prompt-button:hover {
+  background-color: #c82333;
+}
+
+.add-prompt-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+.add-prompt-button:hover {
+  background-color: #0056b3;
+}
+
+/* Model Selection */
+.model-selection {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.model-selection select {
+  flex-grow: 1;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  font-size: 1rem;
+  background-color: #ffffff;
+  color: #495057;
+}
+
+.model-selection select:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
+
+.model-selection .reload-button {
+  padding: 10px 15px;
+  flex-shrink: 0;
+}
+
+.error-text {
+  color: #f8d7da;
+  font-size: 0.9rem;
+  margin-top: 5px;
 }

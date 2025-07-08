@@ -126,9 +126,10 @@ def update_config():
         with open(config_path, 'w', encoding='utf-8') as f:
             yaml.dump(merged_config, f, default_flow_style=False, sort_keys=False)
         
+        actual_saved_path = os.path.abspath(config_path)
         return jsonify({
             'success': True,
-            'message': 'Configuration updated successfully'
+            'message': f'Configuration updated successfully to {actual_saved_path}'
         })
     
     except Exception as e:
