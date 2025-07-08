@@ -145,10 +145,54 @@ function startBackend() {
 }
 
 function stopBackend() {
-  if (backendProcess) {
-    log('Stopping backend process...');
-    backendProcess.kill();
+  if (backendProcess && backendProcess.pid) {
+    log(`Stopping backend process with PID: ${backendProcess.pid}...`);
+    
+    try {
+      // On Windows, use taskkill to force terminate the process tree
+      if (process.platform === 'win32') {
+        log('Using Windows taskkill to terminate process tree...');
+        const { execSync } = require('child_process');
+        
+        try {
+          // Kill the entire process tree forcefully
+          execSync(`taskkill /pid ${backendProcess.pid} /T /F`, { 
+            stdio: 'ignore',
+            timeout: 5000 
+          });
+          log('Backend process tree terminated successfully');
+        } catch (taskkillError) {
+          log(`Taskkill failed: ${taskkillError.message}`, 'WARN');
+          
+          // Fallback to Node.js kill
+          try {
+            backendProcess.kill('SIGKILL');
+            log('Fallback SIGKILL sent to backend process');
+          } catch (killError) {
+            log(`Fallback kill failed: ${killError.message}`, 'WARN');
+          }
+        }
+      } else {
+        // On non-Windows platforms, use SIGKILL
+        backendProcess.kill('SIGKILL');
+        log('SIGKILL sent to backend process');
+      }
+      
+      // Wait a moment for the process to terminate
+      setTimeout(() => {
+        if (backendProcess) {
+          log('Backend process cleanup completed');
+          backendProcess = null;
+        }
+      }, 1000);
+      
+    } catch (error) {
+      log(`Error stopping backend process: ${error.message}`, 'ERROR');
+    }
+    
     backendProcess = null;
+  } else {
+    log('No backend process to stop');
   }
 }
 
@@ -194,7 +238,71 @@ app.on('before-quit', () => {
   stopBackend();
 });
 
+// Additional cleanup handlers for edge cases
+app.on('will-quit', (event) => {
+  log('App will quit, ensuring backend cleanup...');
+  if (backendProcess && backendProcess.pid) {
+    event.preventDefault();
+    stopBackend();
+    
+    // Give some time for cleanup, then quit
+    setTimeout(() => {
+      app.quit();
+    }, 2000);
+  }
+});
+
+// Handle process exit signals
+process.on('SIGINT', () => {
+  log('Received SIGINT, stopping backend...');
+  stopBackend();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  log('Received SIGTERM, stopping backend...');
+  stopBackend();
+  process.exit(0);
+});
+
+// Handle Windows-specific exit signals
+if (process.platform === 'win32') {
+  process.on('SIGBREAK', () => {
+    log('Received SIGBREAK, stopping backend...');
+    stopBackend();
+    process.exit(0);
+  });
+}
+
 // Handle any unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   log(`Unhandled Rejection at: ${promise}, reason: ${reason}`, 'ERROR');
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  log(`Uncaught Exception: ${error.message}`, 'ERROR');
+  log(`Stack: ${error.stack}`, 'ERROR');
+  stopBackend();
+  process.exit(1);
+});
+
+// Ensure cleanup on process exit
+process.on('exit', (code) => {
+  log(`Process exiting with code: ${code}`);
+  if (backendProcess && backendProcess.pid) {
+    log('Force killing backend process on exit...');
+    try {
+      if (process.platform === 'win32') {
+        require('child_process').execSync(`taskkill /pid ${backendProcess.pid} /T /F`, { 
+          stdio: 'ignore',
+          timeout: 3000 
+        });
+      } else {
+        backendProcess.kill('SIGKILL');
+      }
+    } catch (err) {
+      // Silent fail on exit
+    }
+  }
 });
