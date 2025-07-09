@@ -1,18 +1,236 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 function App() {
+  const [apiPort, setApiPort] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState('');
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('config');
+  const [config, setConfig] = useState({
+    base_url: '',
+    model: '',
+    api_key: '',
+    system_prompt: '',
+    prompts: [],
+    base_directory: '',
+    recursive: false
+  });
+  const [configLoading, setConfigLoading] = useState(false);
+  const [configError, setConfigError] = useState('');
+  const [configSuccess, setConfigSuccess] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [models, setModels] = useState([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [modelsError, setModelsError] = useState('');
+  const directoryInputRef = useRef(null);
+  //const inputRef = useRef(null);
+  // Fetch models from base_url
+  const fetchModels = async (baseUrl) => {
+    if (!baseUrl) {
+      setModels([]);
+      return;
+    }
+
+    setModelsLoading(true);
+    setModelsError('');
+    
+    try {
+      // Ensure the URL has a scheme
+      let url = baseUrl;
+      if (!/^https?:\/\//i.test(url)) {
+        url = 'http://' + url;
+      }
+      
+      // Construct the models URL
+      const modelsUrl = new URL('v1/models', url).toString();
+      
+      const response = await fetch(modelsUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`${response.statusText}`);
+      }
+      
+      const data = await response.json();
+
+      if (data.data && Array.isArray(data.data)) {
+        const modelIds = data.data.map(m => m.id);
+        setModels(modelIds);
+      } else {
+        setModelsError('Unexpected response format from models endpoint');
+      }
+    } catch (err) {
+      setModelsError(`Failed to fetch models: ${err.message}. Check that your VLM host is running and API service is enabled.`);
+    } finally {
+      setModelsLoading(false);
+    }
+  };
+
+  // Load configuration from backend
+  const loadConfig = async () => {
+    if (!apiPort) return;
+    setConfigLoading(true);
+    setConfigError('');
+    
+    try {
+      const response = await fetch(`http://localhost:${apiPort}/api/config`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const newConfig = {
+          base_url: data.config.base_url || '',
+          model: data.config.model || '',
+          api_key: data.config.api_key || '',
+          system_prompt: data.config.system_prompt || '',
+          prompts: data.config.prompts || [''],
+          base_directory: data.config.base_directory || '',
+          recursive: data.config.recursive || false
+        };
+        setConfig(newConfig);
+        if (newConfig.base_url) {
+          fetchModels(newConfig.base_url);
+        }
+      } else {
+        setConfigError(data.error || 'Failed to load configuration');
+      }
+    } catch (err) {
+      setConfigError('Failed to connect to the server');
+    } finally {
+      setConfigLoading(false);
+    }
+  };
+
+  // Save configuration to backend
+  const saveConfig = async () => {
+    if (!apiPort) return;
+    setIsSaving(true);
+    setConfigLoading(true);
+    setConfigError('');
+    setConfigSuccess('');
+    
+    try {
+      const response = await fetch(`http://localhost:${apiPort}/api/config`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          config: {
+            base_url: config.base_url,
+            model: config.model,
+            api_key: config.api_key,
+            prompts: config.prompts,
+            base_directory: config.base_directory,
+            recursive: config.recursive
+          }
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setConfigSuccess(data.message);
+        setTimeout(() => setConfigSuccess(''), 10000);
+      } else {
+        setConfigError(data.error || 'Failed to save configuration');
+      }
+    } catch (err) {
+      setConfigError('Failed to connect to the server');
+    } finally {
+      setConfigLoading(false);
+      setIsSaving(false);
+    }
+  };
+
+  // Handle input changes
+  const handleConfigChange = (field, value) => {
+    setConfig(prev => {
+      const newConfig = { ...prev, [field]: value };
+      
+      // If base_url changes, clear models and selected model, then fetch new models
+      if (field === 'base_url') {
+        setModels([]);
+        newConfig.model = '';
+        fetchModels(value);
+      }
+      
+      return newConfig;
+    });
+  };
+
+  // Handle prompt changes
+  const handlePromptChange = (index, value) => {
+    const newPrompts = [...config.prompts];
+    newPrompts[index] = value;
+    handleConfigChange('prompts', newPrompts);
+  };
+
+  // Add a new prompt
+  const addPrompt = () => {
+    handleConfigChange('prompts', [...config.prompts, '']);
+  };
+
+  // Remove a prompt
+  const removePrompt = (index) => {
+    const newPrompts = config.prompts.filter((_, i) => i !== index);
+    handleConfigChange('prompts', newPrompts);
+  };
+
+  const handleTabSwitch = async (tab) => {
+    if (tab === 'run') {
+      await saveConfig();
+    }
+    setActiveTab(tab);
+  };
+
+  const handleDirectorySelect = (e) => {
+    if (e.target.files.length > 0) {
+      const file = e.target.files[0];
+      // In Electron, file.path provides the absolute path.
+      // We can derive the directory path from the path of the first file.
+      const path = file.path;
+      const lastSeparatorIndex = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+      const directoryPath = path.substring(0, lastSeparatorIndex);
+      handleConfigChange('base_directory', directoryPath);
+    }
+  };
+
+  // Load configuration on component mount
+  useEffect(() => {
+    if (window.api) {
+      window.api.receive('set-api-port', (port) => {
+        console.log(`Received API port: ${port}`);
+        setApiPort(port);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (apiPort) {
+      loadConfig();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiPort]);
 
   const runCaptioning = async () => {
+    if (!apiPort) return;
     setIsRunning(true);
     setOutput('');
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/run', {
+      const response = await fetch(`http://localhost:${apiPort}/api/run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -37,27 +255,223 @@ function App() {
     <div className="App">
       <header className="App-header">
         <h1>VLM Caption</h1>
-        <p>Click the button below to start the captioning process</p>
         
-        <button 
-          onClick={runCaptioning} 
-          disabled={isRunning}
-          className="run-button"
-        >
-          {isRunning ? 'Running...' : 'Run Captioning'}
-        </button>
+        {/* Tab Navigation */}
+        <div className="tab-navigation">
+          <button 
+            className={`tab-button ${activeTab === 'config' ? 'active' : ''}`}
+            onClick={() => handleTabSwitch('config')}
+          >
+            Configuration
+          </button>
+          <button 
+            className={`tab-button ${activeTab === 'run' ? 'active' : ''}`}
+            onClick={() => handleTabSwitch('run')}
+          >
+            Run
+          </button>
 
-        {error && (
-          <div className="error">
-            <h3>Error:</h3>
-            <pre>{error}</pre>
+        </div>
+
+        {/* Run Tab */}
+        {activeTab === 'run' && (
+          <div className="tab-content">
+            <p>Click the button below to start the captioning process</p>
+            
+            <button 
+              onClick={runCaptioning} 
+              disabled={isRunning || isSaving}
+              className="run-button"
+            >
+              {isSaving ? 'Saving...' : (isRunning ? 'Running...' : 'Run Captioning')}
+            </button>
+
+            {error && (
+              <div className="error">
+                <h3>Error:</h3>
+                <pre>{error}</pre>
+              </div>
+            )}
+
+            {output && (
+              <div className="output">
+                <h3>Output:</h3>
+                <pre>{output}</pre>
+              </div>
+            )}
           </div>
         )}
 
-        {output && (
-          <div className="output">
-            <h3>Output:</h3>
-            <pre>{output}</pre>
+        {/* Configuration Tab */}
+        {activeTab === 'config' && (
+          <div className="tab-content">            
+            {configLoading && <p>Loading configuration...</p>}
+            
+            {configError && (
+              <div className="error">
+                <h3>Error:</h3>
+                <pre>{configError}</pre>
+              </div>
+            )}
+
+            {configSuccess && (
+              <div className="success">
+                <p>{configSuccess}</p>
+              </div>
+            )}
+
+            <form onSubmit={(e) => { e.preventDefault(); saveConfig(); }}>
+              
+              <div className="form-actions">
+                <button 
+                  type="button" 
+                  onClick={loadConfig}
+                  disabled={configLoading}
+                  className="reload-button"
+                >
+                  Reload
+                </button>
+              </div>
+              <div>Config is saved automatically when you swap to Run tab.</div>
+              <div className="form-group">
+                <label htmlFor="base_url">Base URL:</label>
+                <input
+                  type="text"
+                  id="base_url"
+                  value={config.base_url}
+                  onChange={(e) => handleConfigChange('base_url', e.target.value)}
+                  placeholder="e.g., http://localhost:1234/v1"
+                />
+                <div>Copy from LM Studio developer tab.</div>
+              </div>              
+
+              <div className="form-group">
+                <label htmlFor="model">Model:</label>
+                <div className="model-selection">
+                  <select
+                    id="model"
+                    value={config.model}
+                    onChange={(e) => handleConfigChange('model', e.target.value)}
+                    disabled={modelsLoading || !config.base_url}
+                  >
+                    <option value="">
+                      {config.base_url ? 'Select a model' : 'Enter Base URL first'}
+                    </option>
+                    {models.map(modelId => (
+                      <option key={modelId} value={modelId}>
+                        {modelId}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => fetchModels(config.base_url)}
+                    disabled={modelsLoading || !config.base_url}
+                    className="reload-button"
+                  >
+                    {modelsLoading ? '...' : 'Refresh'}
+                  </button>
+                </div>
+                {modelsError && <p className="error-text">{modelsError}</p>}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="api_key">API Key:</label>
+                <input
+                  type="password"
+                  id="api_key"
+                  value={config.api_key}
+                  onChange={(e) => handleConfigChange('api_key', e.target.value)}
+                  placeholder="Leave empty for local models"
+                />
+              </div>
+
+              <div className="form-group">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
+                  <label htmlFor="base_directory">Base Directory:</label>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <label htmlFor="recursive" style={{ marginRight: '5px' }}>Recursive</label>
+                    <input
+                      type="checkbox"
+                      id="recursive"
+                      className="recursive-checkbox"
+                      checked={config.recursive}
+                      onChange={(e) => handleConfigChange('recursive', e.target.checked)}
+                    />
+                  </div>
+                </div>
+                <div className="directory-picker" style={{ display: 'flex' }}>
+                  <input
+                    type="text"
+                    id="base_directory"
+                    value={config.base_directory}
+                    onChange={(e) => handleConfigChange('base_directory', e.target.value)}
+                    placeholder="e.g., C:\Users\YourUser\Images"
+                    style={{ flex: 1, marginRight: '10px' }}
+                  />
+                  <input
+                    type="file"
+                    webkitdirectory="true"
+                    style={{ display: 'none' }}
+                    ref={directoryInputRef}
+                    onChange={handleDirectorySelect}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => directoryInputRef.current.click()}
+                    className="reload-button"
+                  >
+                    Select...
+                  </button>
+                  
+                </div>
+
+              </div>
+              
+
+              <div className="form-group">
+                <label htmlFor="system_prompt">System Prompt:</label>
+                <textarea
+                  type="text"
+                  id="system_prompt"
+                  value={config.system_prompt}
+                  onChange={(e) => handleConfigChange('system_prompt', e.target.value)}
+                  placeholder="You are an expert image analyzer..."
+                  rows="3"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Prompts:</label>
+                <div>Enter a series of 1 or more prompts to extract visual information.</div>
+                {config.prompts.map((prompt, index) => (
+                  <div key={index} className="prompt-item">
+                    <textarea
+                      value={prompt}
+                      onChange={(e) => handlePromptChange(index, e.target.value)}
+                      placeholder={`Prompt ${index + 1}`}
+                      rows="3"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => removePrompt(index)}
+                      className="remove-prompt-button"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                  
+                ))}
+                <div><b><i>Last prompt will generate the caption.</i></b></div>
+                <button 
+                  type="button" 
+                  onClick={addPrompt}
+                  className="add-prompt-button"
+                >
+                  Add Prompt
+                </button>
+              </div>
+            </form>
           </div>
         )}
       </header>

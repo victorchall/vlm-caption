@@ -10,12 +10,21 @@ Video app overview with install: [VLM Caption, multi-turn, data-driven image cap
 
 ## Install
 
-- See [API Service Setup](#API_Service_Setup) to install a VLM/LLM server of your choice.  LM Studio is extremely easy to install and use to manage models.
+- See [API Service Setup](#API_Service_Setup) to install a VLM/LLM server of your choice.  LM Studio is extremely easy to install and use to manage models.  Your API service will actually host your VLM/LLM models, and any model you can load can be used, but `Vision` support is required. Many hundreds, if not thousands of models are available.
 
-- Visit https://github.com/victorchall/vlm-caption/actions, click on the most recent (top) workflow run, then under `Artifacts` click on `vlm-caption` to download the latest build.  Unzip it somewhere on your computer.
+- Visit https://github.com/victorchall/vlm-caption/actions, click on the most recent (top) workflow run, then under `Artifacts` you will find downloads for *either a simple command line exe or the Electron GUI app with installer.* Choose either as you wish.
 
-- Edit the `caption.yaml` then run the `caption_openai.exe`.
-    - If you prefer, you can clone the repo, setup a venv or conda env, install requirements, then run with python. This is for users with some level of python/git experience only.
+    a. The cli (command line) app is just a zip file with  `caption.yaml`  and `caption_openai.exe`.  Unzip whereever you like. 
+    - Edit the `caption.yaml` with the text editor of your choice then run the `caption_openai.exe`.
+
+    Delete it to uninstall. To update, you can delete the old version or just unzip again to the same location and overwrite. 
+    
+    b. The electron version is a GUI app delivered as a one-click installer that will give you a GUI to edit configurations instead of manually editing the captoin.yaml file.  It will add a shortcut to your desktop.
+
+    *You will need to enable CORS on your VLM service so it can retrieve your installed models.*
+
+    Uninstall via `Add or Remove programs` in Windows.  To update, just download a newer version and install again, it will overwrite the old version.
+
 
 ## Features
 
@@ -28,13 +37,11 @@ Video app overview with install: [VLM Caption, multi-turn, data-driven image cap
 
 A GUI is a work-in-progress, but will not be much more than a simple wrapper to edit `caption.yaml`, thus low priority.
 
-## Installation
-
 ## Configuration
 
-All settings are configured through `caption.yaml`.
+All settings are configured through `caption.yaml` when using the CLI version.  The GUI version has the same config, just presented in GUI form for ease.
 
-**The `caption.yaml` file MUST be modified for your project. Open it in something like nano or Notepad++ to edit and make sure to save it!**
+**The Configuration file MUST be modified for your project and system.**
 
 ### API Configuration
 
@@ -55,10 +62,10 @@ model: "gemma-3-27b-it"
 # model: "gpt-4o-mini"
 # model: "claude-sonnet-4-20250514"
 
-# Token limit (adjust for local VRAM constraints)
+# Token limit (adjust for local VRAM constraints, though the VLM servic context setting likely takes precedent)
 max_tokens: 16384
 ```
-`model` is a string that tells the service what model you want to use. It should be visible in LM Studio in your models list, or with ollama use `ollama list`, or check the documentation of whatever service you are using.
+`model` is a string that tells the service what model you want to use. It should be visible in LM Studio in your models list, or with ollama use `ollama list`, or check the documentation of whatever service you are using.  The GUI will give you a drop down of what your local LLM service has available.
 
 **System Prompt**: Base instructions for the VLM.  Think of this as a global instruction that you likely will not modify per project.
 ```yaml
@@ -184,3 +191,8 @@ Congrats! You're running your own offline LLM/VLM server.
     For instance, if you are writing webscrapers, make sure to collect metadata from the webpage as you go rather than blindly just download each image. Perhaps you might include the website address or full URI of the webpage, the `<title>` tag from the webpage, or the `alt-text` field. Save this information with each image, or in a database. Then feed into the VLM with a `hint_source`. New hint sources are very easy for an amateur Python programmer to write, or you can have an LLM write for you. 
 
     See [HINTSOURCES.md](HINTSOURCES.md) for more information.
+
+
+## Dev
+
+See [DEV.md](DEV.md) 

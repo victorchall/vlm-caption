@@ -76,14 +76,9 @@ jobs:
         timeout-minutes: 30
         run: |
           cd ui
-          echo "Starting Electron build process..."
-          echo "Step 1: Building backend..."
           npm run build:backend
-          echo "Step 2: Building React app..."
           npm run build
-          echo "Step 3: Building Electron installer..."
           npx electron-builder --win --publish=never
-          echo "Electron build completed!"
 
       - name: Upload Electron Artifact
         uses: actions/upload-artifact@v4
@@ -92,8 +87,10 @@ jobs:
           path: ui/dist/*.exe
 
   create-release:
-    needs: [build-cli, build-electron]
     runs-on: windows-latest
+    needs: [build-cli, build-electron]
+    permissions:
+      contents: write
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
@@ -110,7 +107,7 @@ jobs:
           name: vlm-caption-electron
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
           name: VLM Caption v${{ github.run_number }}
@@ -124,8 +121,8 @@ jobs:
             🚀 **What's New:**
             - Latest updates from commit ${{ github.sha }}
           files: |
-            vlm-caption-cli.zip
-            *.exe
+            *.zip
+            LICENSE
           draft: false
           prerelease: false
         env:

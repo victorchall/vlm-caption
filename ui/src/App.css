@@ -86,3 +86,230 @@
   max-height: 400px;
   overflow-y: auto;
 }
+
+/* Tab Navigation */
+.tab-navigation {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.tab-button {
+  background-color: #495057;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 1rem;
+  border-radius: 5px 5px 0 0;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.tab-button:hover {
+  background-color: #6c757d;
+}
+
+.tab-button.active {
+  background-color: #007bff;
+}
+
+.tab-button.active:hover {
+  background-color: #0056b3;
+}
+
+/* Tab Content */
+.tab-content {
+  width: 100%;
+  max-width: 800px;
+}
+
+.tab-content h2 {
+  margin-bottom: 20px;
+  color: #ffffff;
+}
+
+/* Configuration Form */
+.form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  font-size: 1rem;
+  background-color: #ffffff;
+  color: #495057;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.form-group input::placeholder {
+  color: #6c757d;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 30px;
+  justify-content: center;
+}
+
+.save-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.save-button:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.save-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.reload-button {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.reload-button:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+.reload-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Success Message */
+.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  border-radius: 5px;
+  padding: 15px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.success p {
+  margin: 0;
+  font-weight: bold;
+}
+
+/* Prompt Styling */
+.prompt-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.prompt-item textarea {
+  flex-grow: 1;
+  resize: vertical;
+}
+
+.remove-prompt-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  width: 30px;
+  height: 30px;
+  font-size: 1.2rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 2px;
+}
+
+.remove-prompt-button:hover {
+  background-color: #c82333;
+}
+
+.add-prompt-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+.add-prompt-button:hover {
+  background-color: #0056b3;
+}
+
+/* Model Selection */
+.model-selection {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.model-selection select {
+  flex-grow: 1;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  font-size: 1rem;
+  background-color: #ffffff;
+  color: #495057;
+}
+
+.model-selection select:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
+
+.model-selection .reload-button {
+  padding: 10px 15px;
+  flex-shrink: 0;
+}
+
+.error-text {
+  color: #f8d7da;
+  font-size: 0.9rem;
+  margin-top: 5px;
+}
+
+.recursive-checkbox {
+  transform: scale(1.5);
+  margin-right: 5px;
+}
