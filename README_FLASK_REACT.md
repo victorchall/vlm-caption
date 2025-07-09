@@ -2,11 +2,12 @@
 
 This document describes how to run the VLM Caption application with the new Flask API backend and React UI frontend.
 
+This is mainly dev focused, as users can download the one-click installer instead.
+
 ## Prerequisites
 
 - Python 3.7+ with venv
-- Node.js 14+ and npm
-- Your existing VLM Caption configuration (caption.yaml)
+- Node.js 22+ and npm
 
 ## Setup Instructions
 
@@ -29,7 +30,17 @@ This document describes how to run the VLM Caption application with the new Flas
    python app.py
    ```
    
-   The Flask server will run on `http://localhost:5000`
+   The Flask server will run on `http://localhost:5000` but you can change the port with `--port`.
+
+### API Endpoints
+
+The Flask API provides the following endpoints:
+
+- `POST /api/run` - Starts the captioning process
+- `GET /api/status` - Returns the current status (whether captioning is running)
+- `GET /api/health` - Health check endpoint
+- `GET /api/config` - Get the configuration (from caption.yaml in cwd of the flask api)
+- `POST /api/config` - Modify the configuration (overwrites caption.yaml in cwd of the flask api)
 
 ### 2. Frontend Setup (React UI)
 
@@ -57,26 +68,21 @@ This document describes how to run the VLM Caption application with the new Flas
    - Click the "Run Captioning" button to start the captioning process
    - The output will be displayed on the page
 
-## API Endpoints
-
-The Flask API provides the following endpoints:
-
-- `POST /api/run` - Starts the captioning process
-- `GET /api/status` - Returns the current status (whether captioning is running)
-- `GET /api/health` - Health check endpoint
 
 ## Project Structure
 
 ```
 vlm-caption/
 ├── app.py                 # Flask API server
-├── caption_openai.py      # Original captioning script
+├── caption_openai.py      # Core captioning script
 ├── caption.yaml           # Configuration file
 ├── requirements.txt       # Python dependencies
 ├── ui/                    # React frontend
 │   ├── package.json       # Node.js dependencies
 │   ├── public/
-│   │   └── index.html     # HTML template
+│   │   ├── index.html     # HTML template
+│   │   ├── electron.js    # electron wrapper
+│   │   └── preload.js     # port negotiation
 │   └── src/
 │       ├── App.js         # Main React component
 │       ├── App.css        # Styling
