@@ -1,46 +1,38 @@
-# local would be something like "http://localhost:1234/v1" if running ollama or LM Studio with service enabled
-base_url: "http://192.168.1.159:1234/v1"
-
-api_key_env_vars: # GENERALLY NOT MODIFIED, these are api_key (below) values that will trigger reading from the environment instead of being use literally.
-  - OPENAI_API_KEY # https://api.openai.com/v1
-  - ANTHROPIC_API_KEY # https://api.anthropic.com/v1
-  - GEMINI_API_KEY # https://generativelanguage.googleapis.com/v1beta/openai/
-  - MY_API_KEY_ENV_VAR_NAME # example custom value...
-
-
-# set the model string.  If running locally, try pasting http://localhost:1234/v1/models in your web browser to see what you have
-model: "llama-4-scout-17b-16e-instruct" # "gemma-3-27b-it" "llama-4-scout-17b-16e-instruct" "gpt-4o-mini" "claude-sonnet-4-20250514" "gemini-2.5-pro" "gemma-3-27b-it-abliterated"
-
-# leave api_key as "" if using a locally hosted
-# ... or use one of the above api_key_env_vars to read that key from your env (recommended if using third party api like Open AI, Gemini, etc)
-# ... or set an actual api key literal value (not recommended, using an env var is safer)
-api_key: ""
-
+base_url: http://192.168.1.159:1234/v1
+api_key_env_vars:
+- OPENAI_API_KEY
+- ANTHROPIC_API_KEY
+- GEMINI_API_KEY
+- MY_API_KEY_ENV_VAR_NAME
+model: llama-4-scout-17b-16e-instruct
+api_key: ''
 max_tokens: 16384
-
-system_prompt: You are to analyze an image from the video game Final Fantasy VII Rebirth and provide information based on what is visible in the image.
-  Do not embellish, and avoid langauge like 'showcases' or 'features,' preferring to focus on factual information.
-  Make sure anything that is out of frame is NOT described.
-  Try to use the codex to identify characters, locations, and objects, but once a character is identified you do not need to describe them in great detail in further responses.
-  If json metadata is present it can be trusted to be accurate.
-  Never include things that are not present in the image, and do not say things like 'no characters are visible.'
-  Do not write things like 'No other characters are visible' or 'The character's features do not align with any specific character'.
-
-global_metadata_file: "character_info.txt"
-
+system_prompt: You are to analyze an image from the video game Final Fantasy VII Rebirth
+  and provide information based on what is visible in the image. Do not embellish,
+  and avoid langauge like 'showcases' or 'features,' preferring to focus on factual
+  information. Make sure anything that is out of frame is NOT described. Try to use
+  the codex to identify characters, locations, and objects, but once a character is
+  identified you do not need to describe them in great detail in further responses.
+  If json metadata is present it can be trusted to be accurate. Never include things
+  that are not present in the image, and do not say things like 'no characters are
+  visible.' Do not write things like 'No other characters are visible' or 'The character's
+  features do not align with any specific character'.
+global_metadata_file: ""
 prompts:
-  - Describe the image in detail. Physically describe each character.
-  - Can you positively identify any characters, objects, or locations based on the codex or metadata? If you can identify characters, give reasons for the positive id.
-  - Describe the framing and composition, shot type, shot angle. For this request, think like a photographer or cinematographer.
-  - To finalize, summarize the description of the image in four to five sentences, focusing on factual information present in the image. Do not include any markdown, headers, or special formatting.
-    Do not start with 'the image depicts' or similar.  Simply exclude such phrases and focus on what IS visible.
-    Ensure it is described as Final Fantasy VII Rebirth in some way once.
-
+- Describe the image in detail. Physically describe each character.
+- Can you positively identify any characters, objects, or locations based on the codex
+  or metadata? If you can identify characters, give reasons for the positive id.
+- Describe the framing and composition, shot type, shot angle. For this request, think
+  like a photographer or cinematographer.
+- To finalize, summarize the description of the image in four to five sentences, focusing
+  on factual information present in the image. Do not include any markdown, headers,
+  or special formatting. Do not start with 'the image depicts' or similar.  Simply
+  exclude such phrases and focus on what IS visible. Ensure it is described as Final
+  Fantasy VII Rebirth in some way once.
 hint_sources:
-  - full_path
-  - json
-  - metadata
-
-base_directory: "R:/games/rebirth_screenshots_sdr"
-recursive: false   # Enable/disable recursive directory traversal
-skip_if_txt_exists: true # don't overwrite if a .txt already exists
+- full_path
+- json
+- metadata
+base_directory: R:/games/rebirth_screenshots_sdr
+recursive: true
+skip_if_txt_exists: true
