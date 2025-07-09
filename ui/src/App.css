@@ -91,7 +91,7 @@
 .tab-navigation {
   display: flex;
   gap: 10px;
-  margin-bottom: 30px;
+  margin-bottom: 10px;
 }
 
 .tab-button {
@@ -307,4 +307,9 @@
   color: #f8d7da;
   font-size: 0.9rem;
   margin-top: 5px;
+}
+
+.recursive-checkbox {
+  transform: scale(1.5);
+  margin-right: 5px;
 }

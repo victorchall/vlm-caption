@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 function App() {
@@ -6,20 +6,25 @@ function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState('');
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('run');
+  const [activeTab, setActiveTab] = useState('config');
   const [config, setConfig] = useState({
     base_url: '',
     model: '',
     api_key: '',
-    prompts: []
+    system_prompt: '',
+    prompts: [],
+    base_directory: '',
+    recursive: false
   });
   const [configLoading, setConfigLoading] = useState(false);
   const [configError, setConfigError] = useState('');
   const [configSuccess, setConfigSuccess] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [models, setModels] = useState([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsError, setModelsError] = useState('');
-
+  const directoryInputRef = useRef(null);
+  //const inputRef = useRef(null);
   // Fetch models from base_url
   const fetchModels = async (baseUrl) => {
     if (!baseUrl) {
@@ -48,7 +53,7 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch models: ${response.statusText}`);
+        throw new Error(`${response.statusText}`);
       }
       
       const data = await response.json();
@@ -60,7 +65,7 @@ function App() {
         setModelsError('Unexpected response format from models endpoint');
       }
     } catch (err) {
-      setModelsError(`Failed to fetch models: ${err.message}`);
+      setModelsError(`Failed to fetch models: ${err.message}. Check that your VLM host is running and API service is enabled.`);
     } finally {
       setModelsLoading(false);
     }
@@ -87,7 +92,10 @@ function App() {
           base_url: data.config.base_url || '',
           model: data.config.model || '',
           api_key: data.config.api_key || '',
-          prompts: data.config.prompts || ['']
+          system_prompt: data.config.system_prompt || '',
+          prompts: data.config.prompts || [''],
+          base_directory: data.config.base_directory || '',
+          recursive: data.config.recursive || false
         };
         setConfig(newConfig);
         if (newConfig.base_url) {
@@ -106,6 +114,7 @@ function App() {
   // Save configuration to backend
   const saveConfig = async () => {
     if (!apiPort) return;
+    setIsSaving(true);
     setConfigLoading(true);
     setConfigError('');
     setConfigSuccess('');
@@ -121,7 +130,9 @@ function App() {
             base_url: config.base_url,
             model: config.model,
             api_key: config.api_key,
-            prompts: config.prompts
+            prompts: config.prompts,
+            base_directory: config.base_directory,
+            recursive: config.recursive
           }
         }),
       });
@@ -138,6 +149,7 @@ function App() {
       setConfigError('Failed to connect to the server');
     } finally {
       setConfigLoading(false);
+      setIsSaving(false);
     }
   };
 
@@ -173,6 +185,25 @@ function App() {
   const removePrompt = (index) => {
     const newPrompts = config.prompts.filter((_, i) => i !== index);
     handleConfigChange('prompts', newPrompts);
+  };
+
+  const handleTabSwitch = async (tab) => {
+    if (tab === 'run') {
+      await saveConfig();
+    }
+    setActiveTab(tab);
+  };
+
+  const handleDirectorySelect = (e) => {
+    if (e.target.files.length > 0) {
+      const file = e.target.files[0];
+      // In Electron, file.path provides the absolute path.
+      // We can derive the directory path from the path of the first file.
+      const path = file.path;
+      const lastSeparatorIndex = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+      const directoryPath = path.substring(0, lastSeparatorIndex);
+      handleConfigChange('base_directory', directoryPath);
+    }
   };
 
   // Load configuration on component mount
@@ -229,15 +260,15 @@ function App() {
         <div className="tab-navigation">
           <button 
             className={`tab-button ${activeTab === 'config' ? 'active' : ''}`}
-            onClick={() => setActiveTab('config')}
+            onClick={() => handleTabSwitch('config')}
           >
             Configuration
           </button>
           <button 
             className={`tab-button ${activeTab === 'run' ? 'active' : ''}`}
-            onClick={() => setActiveTab('run')}
+            onClick={() => handleTabSwitch('run')}
           >
-            Run Captioning
+            Run
           </button>
 
         </div>
@@ -249,10 +280,10 @@ function App() {
             
             <button 
               onClick={runCaptioning} 
-              disabled={isRunning}
+              disabled={isRunning || isSaving}
               className="run-button"
             >
-              {isRunning ? 'Running...' : 'Run Captioning'}
+              {isSaving ? 'Saving...' : (isRunning ? 'Running...' : 'Run Captioning')}
             </button>
 
             {error && (
@@ -273,9 +304,7 @@ function App() {
 
         {/* Configuration Tab */}
         {activeTab === 'config' && (
-          <div className="tab-content">
-            <h2>Configuration</h2>
-            
+          <div className="tab-content">            
             {configLoading && <p>Loading configuration...</p>}
             
             {configError && (
@@ -292,6 +321,18 @@ function App() {
             )}
 
             <form onSubmit={(e) => { e.preventDefault(); saveConfig(); }}>
+              
+              <div className="form-actions">
+                <button 
+                  type="button" 
+                  onClick={loadConfig}
+                  disabled={configLoading}
+                  className="reload-button"
+                >
+                  Reload
+                </button>
+              </div>
+              <div>Config is saved automatically when you swap to Run tab.</div>
               <div className="form-group">
                 <label htmlFor="base_url">Base URL:</label>
                 <input
@@ -301,7 +342,8 @@ function App() {
                   onChange={(e) => handleConfigChange('base_url', e.target.value)}
                   placeholder="e.g., http://localhost:1234/v1"
                 />
-              </div>
+                <div>Copy from LM Studio developer tab.</div>
+              </div>              
 
               <div className="form-group">
                 <label htmlFor="model">Model:</label>
@@ -345,7 +387,63 @@ function App() {
               </div>
 
               <div className="form-group">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
+                  <label htmlFor="base_directory">Base Directory:</label>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <label htmlFor="recursive" style={{ marginRight: '5px' }}>Recursive</label>
+                    <input
+                      type="checkbox"
+                      id="recursive"
+                      className="recursive-checkbox"
+                      checked={config.recursive}
+                      onChange={(e) => handleConfigChange('recursive', e.target.checked)}
+                    />
+                  </div>
+                </div>
+                <div className="directory-picker" style={{ display: 'flex' }}>
+                  <input
+                    type="text"
+                    id="base_directory"
+                    value={config.base_directory}
+                    onChange={(e) => handleConfigChange('base_directory', e.target.value)}
+                    placeholder="e.g., C:\Users\YourUser\Images"
+                    style={{ flex: 1, marginRight: '10px' }}
+                  />
+                  <input
+                    type="file"
+                    webkitdirectory="true"
+                    style={{ display: 'none' }}
+                    ref={directoryInputRef}
+                    onChange={handleDirectorySelect}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => directoryInputRef.current.click()}
+                    className="reload-button"
+                  >
+                    Select...
+                  </button>
+                  
+                </div>
+
+              </div>
+              
+
+              <div className="form-group">
+                <label htmlFor="system_prompt">System Prompt:</label>
+                <textarea
+                  type="text"
+                  id="system_prompt"
+                  value={config.system_prompt}
+                  onChange={(e) => handleConfigChange('system_prompt', e.target.value)}
+                  placeholder="You are an expert image analyzer..."
+                  rows="3"
+                />
+              </div>
+
+              <div className="form-group">
                 <label>Prompts:</label>
+                <div>Enter a series of 1 or more prompts to extract visual information.</div>
                 {config.prompts.map((prompt, index) => (
                   <div key={index} className="prompt-item">
                     <textarea
@@ -362,31 +460,15 @@ function App() {
                       &times;
                     </button>
                   </div>
+                  
                 ))}
+                <div><b><i>Last prompt will generate the caption.</i></b></div>
                 <button 
                   type="button" 
                   onClick={addPrompt}
                   className="add-prompt-button"
                 >
                   Add Prompt
-                </button>
-              </div>
-
-              <div className="form-actions">
-                <button 
-                  type="submit" 
-                  disabled={configLoading}
-                  className="save-button"
-                >
-                  {configLoading ? 'Saving...' : 'Save Configuration'}
-                </button>
-                <button 
-                  type="button" 
-                  onClick={loadConfig}
-                  disabled={configLoading}
-                  className="reload-button"
-                >
-                  Reload
                 </button>
               </div>
             </form>
