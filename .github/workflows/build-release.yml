@@ -121,8 +121,8 @@ jobs:
             🚀 **What's New:**
             - Latest updates from commit ${{ github.sha }}
           files: |
-            *.zip
-            LICENSE
+            vlm-caption*.zip
+            vlm-caption*.exe
           draft: false
           prerelease: false
         env:
