@@ -1,6 +1,6 @@
 # VLM Image Captioning Tool
 
-This app uses Vision Language Models (VLM) to generate detailed captions for images through multi-turn conversations with VLM AI models via an "OpenAI-compatible" API (*including locally hosted models*).
+This app uses Vision Language Models (VLM) to generate detailed captions for images through multi-turn conversations, using a separately hosted VLM models via an "OpenAI-compatible" API (*including locally hosted models*).
 
 This is currently "beta" and features may change.
 
@@ -12,16 +12,16 @@ Video app overview with install: [VLM Caption, multi-turn, data-driven image cap
 
 - See [API Service Setup](#API_Service_Setup) to install a VLM/LLM server of your choice.  LM Studio is extremely easy to install and use to manage models.  Your API service will actually host your VLM/LLM models, and any model you can load can be used, but `Vision` support is required. Many hundreds, if not thousands of models are available.
 
-- Visit https://github.com/victorchall/vlm-caption/actions, click on the most recent (top) workflow run, then under `Artifacts` you will find downloads for *either a simple command line exe or the Electron GUI app with installer.* Choose either as you wish.
+- Visit https://github.com/victorchall/vlm-caption/releases click on `Assets` to expand the the download links.  You have two options to use the application.
 
     a. The cli (command line) app is just a zip file with  `caption.yaml`  and `caption_openai.exe`.  Unzip whereever you like. 
     - Edit the `caption.yaml` with the text editor of your choice then run the `caption_openai.exe`.
 
-    Delete it to uninstall. To update, you can delete the old version or just unzip again to the same location and overwrite. 
+    Delete it to uninstall. To update, you can delete the old version or unzip it to the same location and overwrite. 
     
-    b. The electron version is a GUI app delivered as a one-click installer that will give you a GUI to edit configurations instead of manually editing the captoin.yaml file.  It will add a shortcut to your desktop.
+    b. The electron version is a GUI app delivered as a one-click installer that will give you a GUI to edit configurations instead of manually editing the captoin.yaml file.  It will install and add a shortcut to your desktop.
 
-    *You will need to enable CORS on your VLM service so it can retrieve your installed models.*
+    *You will need to enable CORS on your VLM service. This is a simple toggle in LM Studio.*
 
     Uninstall via `Add or Remove programs` in Windows.  To update, just download a newer version and install again, it will overwrite the old version.
 
