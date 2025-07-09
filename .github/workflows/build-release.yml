@@ -106,11 +106,15 @@ jobs:
         with:
           name: vlm-caption-electron
 
+      - name: Read version from file
+        id: version
+        run: echo "VERSION_TAG=$(cat version.txt)" >> $env:GITHUB_OUTPUT
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.run_number }}
-          name: VLM Caption v${{ github.run_number }}
+          tag_name: v${{ steps.version.outputs.VERSION_TAG }}.${{ github.run_number }}
+          name: VLM Caption v${{ steps.version.outputs.VERSION_TAG }}.${{ github.run_number }}
           body: |
             Automated release containing both CLI and GUI versions of VLM Caption.
             
@@ -121,8 +125,8 @@ jobs:
             🚀 **What's New:**
             - Latest updates from commit ${{ github.sha }}
           files: |
-            vlm-caption*.zip
-            vlm-caption*.exe
+            vlm-caption-cli/vlm-caption-cli.zip
+            vlm-caption-electron/VLM Caption Setup*.exe
           draft: false
           prerelease: false
         env:
