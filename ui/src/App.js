@@ -14,7 +14,8 @@ function App() {
     system_prompt: '',
     prompts: [],
     base_directory: '',
-    recursive: false
+    recursive: false,
+    hint_sources: []
   });
   const [configLoading, setConfigLoading] = useState(false);
   const [configError, setConfigError] = useState('');
@@ -23,6 +24,9 @@ function App() {
   const [models, setModels] = useState([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsError, setModelsError] = useState('');
+  const [hintSources, setHintSources] = useState({});
+  const [hintSourcesLoading, setHintSourcesLoading] = useState(false);
+  const [hintSourcesError, setHintSourcesError] = useState('');
   const directoryInputRef = useRef(null);
   //const inputRef = useRef(null);
   // Fetch models from base_url
@@ -95,7 +99,8 @@ function App() {
           system_prompt: data.config.system_prompt || '',
           prompts: data.config.prompts || [''],
           base_directory: data.config.base_directory || '',
-          recursive: data.config.recursive || false
+          recursive: data.config.recursive || false,
+          hint_sources: data.config.hint_sources || []
         };
         setConfig(newConfig);
         if (newConfig.base_url) {
@@ -132,7 +137,8 @@ function App() {
             api_key: config.api_key,
             prompts: config.prompts,
             base_directory: config.base_directory,
-            recursive: config.recursive
+            recursive: config.recursive,
+            hint_sources: config.hint_sources
           }
         }),
       });
@@ -219,9 +225,37 @@ function App() {
   useEffect(() => {
     if (apiPort) {
       loadConfig();
+      fetchHintSources();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiPort]);
+
+  const fetchHintSources = async () => {
+    if (!apiPort) return;
+    setHintSourcesLoading(true);
+    setHintSourcesError('');
+
+    try {
+      const response = await fetch(`http://localhost:${apiPort}/api/hint_sources`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setHintSources(data.hint_sources);
+      } else {
+        setHintSourcesError(data.error || 'Failed to load hint sources');
+      }
+    } catch (err) {
+      setHintSourcesError('Failed to connect to the server');
+    } finally {
+      setHintSourcesLoading(false);
+    }
+  };
 
   const runCaptioning = async () => {
     if (!apiPort) return;
@@ -452,25 +486,60 @@ function App() {
                       placeholder={`Prompt ${index + 1}`}
                       rows="3"
                     />
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => removePrompt(index)}
                       className="remove-prompt-button"
                     >
                       &times;
                     </button>
                   </div>
-                  
+
                 ))}
                 <div><b><i>Last prompt will generate the caption.</i></b></div>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={addPrompt}
                   className="add-prompt-button"
                 >
                   Add Prompt
                 </button>
               </div>
+
+              {Object.keys(hintSources).length > 0 && (
+                <div className="form-group">
+                  <label>Hint Sources:</label>
+                  <div className="hint-sources-info">
+                    Select additional context sources to enhance captioning. These provide extra information to the model for better caption accuracy.
+                  </div>
+                  {hintSourcesLoading && <p>Loading hint sources...</p>}
+                  {hintSourcesError && <p className="error-text">{hintSourcesError}</p>}
+                  <div className="hint-sources-container">
+                    {Object.entries(hintSources).map(([sourceKey, sourceData]) => (
+                      <div key={sourceKey} className="hint-source-item">
+                        <div className="hint-source-key">
+                          {sourceData.display_name}
+                        </div>
+                        <div className="hint-source-description">
+                          {sourceData.description}
+                        </div>
+                        <label className="hint-source-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={config.hint_sources.includes(sourceKey)}
+                            onChange={(e) => {
+                              const newHintSources = e.target.checked
+                                ? [...config.hint_sources, sourceKey]
+                                : config.hint_sources.filter(s => s !== sourceKey);
+                              handleConfigChange('hint_sources', newHintSources);
+                            }}
+                          />
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </form>
           </div>
         )}
