@@ -9,6 +9,7 @@ import yaml
 import json
 import os
 from caption_openai import main as caption_main
+from hints.registration import get_available_hint_sources, get_hint_source_descriptions
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -65,6 +66,33 @@ def get_status():
 @app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'healthy'})
+
+@app.route('/api/hint_sources', methods=['GET'])
+def get_hint_sources():
+    """Get available hint sources and their descriptions"""
+    try:
+        # Get available hint sources
+        hint_sources = get_available_hint_sources()
+        descriptions = get_hint_source_descriptions()
+
+        # Combine the data for the response
+        hint_sources_data = {}
+        for source, display_name in hint_sources.items():
+            hint_sources_data[source] = {
+                'display_name': display_name,
+                'description': descriptions.get(source, '')
+            }
+
+        return jsonify({
+            'success': True,
+            'hint_sources': hint_sources_data
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Failed to get hint sources: {str(e)}'
+        }), 500
 
 @app.route('/api/config', methods=['GET'])
 def get_config():

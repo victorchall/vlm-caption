@@ -109,8 +109,8 @@ def get_metadata_hint(image_path: str, **kwargs) -> Optional[str]:
 def get_available_hint_sources() -> Dict[str, str]:
     return {
         "full_path": "Full Path Information",
-        "metadata": "Directory-lvel metadata.json",
-        "json": "Image Json"
+        "metadata": "Directory-level metadata.json",
+        "json": "Per-Image .Json"
         # Display names can be customized here without affecting functionality
     }
 
@@ -118,7 +118,7 @@ def get_hint_source_descriptions() -> Dict[str, str]:
     return {
         "full_path": "Includes the full file path.",
         "metadata": "Reads metadata.json file from image's directory",
-        "json": "Reads the [imagename].json file"
+        "json": "Reads the [imagename].json file for each image"
     }
 
 HINT_FUNCTIONS: Dict[str, Callable] = {
