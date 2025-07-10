@@ -15,7 +15,8 @@ function App() {
     prompts: [],
     base_directory: '',
     recursive: false,
-    hint_sources: []
+    hint_sources: [],
+    global_metadata_file: ''
   });
   const [configLoading, setConfigLoading] = useState(false);
   const [configError, setConfigError] = useState('');
@@ -28,6 +29,7 @@ function App() {
   const [hintSourcesLoading, setHintSourcesLoading] = useState(false);
   const [hintSourcesError, setHintSourcesError] = useState('');
   const directoryInputRef = useRef(null);
+  const metadataFileInputRef = useRef(null);
   //const inputRef = useRef(null);
   // Fetch models from base_url
   const fetchModels = async (baseUrl) => {
@@ -100,7 +102,8 @@ function App() {
           prompts: data.config.prompts || [''],
           base_directory: data.config.base_directory || '',
           recursive: data.config.recursive || false,
-          hint_sources: data.config.hint_sources || []
+          hint_sources: data.config.hint_sources || [],
+          global_metadata_file: data.config.global_metadata_file || ''
         };
         setConfig(newConfig);
         if (newConfig.base_url) {
@@ -138,7 +141,8 @@ function App() {
             prompts: config.prompts,
             base_directory: config.base_directory,
             recursive: config.recursive,
-            hint_sources: config.hint_sources
+            hint_sources: config.hint_sources,
+            global_metadata_file: config.global_metadata_file
           }
         }),
       });
@@ -209,6 +213,15 @@ function App() {
       const lastSeparatorIndex = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
       const directoryPath = path.substring(0, lastSeparatorIndex);
       handleConfigChange('base_directory', directoryPath);
+    }
+  };
+
+  const handleMetadataFileSelect = (e) => {
+    if (e.target.files.length > 0) {
+      const file = e.target.files[0];
+      // In Electron, file.path provides the absolute path
+      const path = file.path;
+      handleConfigChange('global_metadata_file', path);
     }
   };
 
@@ -457,11 +470,38 @@ function App() {
                   >
                     Select...
                   </button>
-                  
+
                 </div>
 
               </div>
-              
+
+              <div className="form-group">
+                <label htmlFor="global_metadata_file">Global Metadata File:</label>
+                <div className="directory-picker" style={{ display: 'flex' }}>
+                  <input
+                    type="text"
+                    id="global_metadata_file"
+                    value={config.global_metadata_file}
+                    onChange={(e) => handleConfigChange('global_metadata_file', e.target.value)}
+                    placeholder="e.g., C:\Users\YourUser\metadata.txt"
+                    style={{ flex: 1, marginRight: '10px' }}
+                  />
+                  <input
+                    type="file"
+                    accept=".txt"
+                    style={{ display: 'none' }}
+                    ref={metadataFileInputRef}
+                    onChange={handleMetadataFileSelect}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => metadataFileInputRef.current.click()}
+                    className="reload-button"
+                  >
+                    Select...
+                  </button>
+                </div>
+              </div>
 
               <div className="form-group">
                 <label htmlFor="system_prompt">System Prompt:</label>
