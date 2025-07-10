@@ -6,7 +6,7 @@ This is currently "beta" and features may change.
 
 A common use case would be to automate captioning large numbers of images for later text-to-image diffusion model training or classification tasks.
 
-Video app overview with install: [VLM Caption, multi-turn, data-driven image captioning](https://www.youtube.com/watch?v=WZ6zK7Tc0zs)
+Slightly old video, app overview with install: [VLM Caption, multi-turn, data-driven image captioning](https://www.youtube.com/watch?v=WZ6zK7Tc0zs)
 
 ## Install
 
@@ -19,9 +19,9 @@ Video app overview with install: [VLM Caption, multi-turn, data-driven image cap
 
     Delete it to uninstall. To update, you can delete the old version or unzip it to the same location and overwrite. 
     
-    b. The electron version is a GUI app delivered as a one-click installer that will give you a GUI to edit configurations instead of manually editing the captoin.yaml file.  It will install and add a shortcut to your desktop.
+    b. The electron version is a GUI app delivered as a one-click installer that will give you a GUI to edit configurations instead of manually editing the caption.yaml file.  It will install and add a shortcut to your desktop.
 
-    *You will need to enable CORS on your VLM service. This is a simple toggle in LM Studio.*
+    *You will need to Enable CORS on your VLM service. This is a simple toggle in LM Studio.*
 
     Uninstall via `Add or Remove programs` in Windows.  To update, just download a newer version and install again, it will overwrite the old version.
 
@@ -65,7 +65,7 @@ model: "gemma-3-27b-it"
 # Token limit (adjust for local VRAM constraints, though the VLM servic context setting likely takes precedent)
 max_tokens: 16384
 ```
-`model` is a string that tells the service what model you want to use. It should be visible in LM Studio in your models list, or with ollama use `ollama list`, or check the documentation of whatever service you are using.  The GUI will give you a drop down of what your local LLM service has available.
+`model` is a string that tells the service what model you want to use. It should be visible in LM Studio in your models list, or with ollama use `ollama list`, or check the documentation of whatever service you are using.  The GUI will give you a drop down of what your local LLM service has available (i.e. everything already downloaded and ready on your system).
 
 **System Prompt**: Base instructions for the VLM.  Think of this as a global instruction that you likely will not modify per project.
 ```yaml
@@ -85,7 +85,7 @@ If you don't have this information, set it to empty quotes `""` like this:
 global_metadata_file: ""
 ```
 
-See the example provided, `character_info.txt`, that includes detailed descriptions about the Final Fantasy VII Rebirth universe.  Keep in mind that very large documents will increase VRAM usage.
+See the example provided, `character_info.txt`, that includes detailed descriptions about the Final Fantasy VII Rebirth universe.  Keep in mind that very large documents will increase VRAM usage, but this is also a very useful feature to help aid the VLM identifying things like specific characters and locations by their proper names.  Otherwise, VLMs may not recognize specific things in the image unless they are very common on the internet.  I.e. A good VLM model will probably recognize Mario or Cloud Strife, but not some side character that is less popular.
 
 
 **Multi-turn Prompts**: Sequential questions asked to the VLM
@@ -154,7 +154,10 @@ You can use a paid API like OpenAI, Anthropic, or Google Gemini by configuring y
    
     a. For LM Studio, enable developer mode (bottom left  `User - Power User - Developer`, click on `Developer`), then go to the `Developer` section, at the top left click the toggle to enable the service. Make sure to copy the uri shown at the top right (see point 5 below).
     
-    ![alt text](doc/lm_studio_dev.png)
+    ![Toggle Service in LM Studio](doc/lm_studio_dev.png)
+
+    If you are using the standalone GUI, you will also need to `Enable CORS` to allow app to call the LM Studio service API.
+    ![Enable CORS in LM Studio](doc/enable_cors.png)
 
 
 4. Make sure the service works.  You can typically check the /v1/models route in any web browser to make sure the service is running and models are available to serve. (ex. something like `http://192.168.0.5:11434/v1/models` or `http://localhost:1234/v1/models` -- just open in Chrome)
@@ -180,7 +183,11 @@ Congrats! You're running your own offline LLM/VLM server.
 
     InternVL3-14B is a good alternative smaller model for users with 16GB or less. 
 
+    Models published by `unsloth` or `lmstudio-community` are generally reliable and will work.  Sometimes some models are not properly marked as vision capable or are misconfigured.  If it doesn't seem to work, see if there is an unsloth or lmstudio-community verson.
+
     Not all models are suitable for multi-turn conversation. Try different models, or you can try a single prompt.
+
+    Test the model directly in the Chat window in LM Studio to see how it responds and to workshop your series of prompts.  Or try running the app on a directory with just a few images, then check the .txt outputs. 
 
 - **Cuda OOM or Failures**: You may need to reduce the number of prompts in your chain if you run out of VRAM, or select a smaller quantization of the model (Q3_K_S, etc), or select a smaller model. You may also need to configure your service to increase the context size as the default is often 4096, which you could exceed with very long chains of prompts, leading to unintended outputs depending on how the service truncates. Check your service logs to spot errors. Refer to the documentation of the service to change the configuration.
 
