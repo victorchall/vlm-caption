@@ -43,7 +43,7 @@ async def write_debug_messages(messages: List, i: int):
 
 async def process_image(client: openai.AsyncOpenAI, image_path, conf) -> Tuple[str,str,int,int]:
     """Process a single image and generate caption using an OpenAI compatible API. 
-    returns a tuple of: [final response, chat history obj, prompt_tokens_usage, completion_tokens_usage]"""
+    returns a tuple of: [final response, chat history jsondumps, prompt_tokens_usage, completion_tokens_usage]"""
     # Convert image to base64 string
     async with aiofiles.open(image_path, "rb") as image_file:
         file_contents = await image_file.read()
@@ -140,7 +140,7 @@ async def main():
         try:
             caption_text, chat_history, prompt_token_usage, completion_token_usage = await process_image(client, image_path, conf)
         except openai.APIConnectionError as e:
-            print(f"{e}\nAPI Error. Check that your service is running and captoin.yaml has the correct base_url")
+            print(f"{e}\nAPI Error. Check that your service is running and caption.yaml has the correct base_url")
         
         # aggregated_prompt_token_usage += prompt_token_usage
         # aggregated_completion_token_usage += aggregated_completion_token_usage
@@ -151,7 +151,7 @@ async def main():
     
     print(F" -> JOB COMPLETE.")
     # not working?
-    #print(f"aggregated_prompt_token_usage: {aggregated_prompt_token_usage}, aggregated_completion_token_usage: {aggregated_completion_token_usage}")
+    print(f"aggregated_prompt_token_usage: {aggregated_prompt_token_usage}, aggregated_completion_token_usage: {aggregated_completion_token_usage}")
 
 if __name__ == "__main__":
     asyncio.run(main())
