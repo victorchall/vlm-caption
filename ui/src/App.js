@@ -373,7 +373,7 @@ function App() {
             <form onSubmit={(e) => { e.preventDefault(); saveConfig(); }}>
               <div className="form-group side-by-side">
                 <div>
-                  <label htmlFor="base_url">Base URL:</label>
+                  <label htmlFor="base_url">Base URL</label>
                   <input
                     type="text"
                     id="base_url"
@@ -385,7 +385,7 @@ function App() {
                 </div>
 
                 <div>
-                  <label htmlFor="model">Model:</label>
+                  <label htmlFor="model">Model</label>
                   <div className="model-selection">
                     <select
                       id="model"
@@ -417,7 +417,7 @@ function App() {
 
               <div className="form-group side-by-side api-key-directory">
                 <div>
-                  <label htmlFor="api_key">API Key:</label>
+                  <label htmlFor="api_key">API Key</label>
                   <input
                     type="password"
                     id="api_key"
@@ -428,19 +428,9 @@ function App() {
                 </div>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
-                    <label htmlFor="base_directory">Base Directory:</label>
+                    <label htmlFor="base_directory">Base Directory</label>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <label htmlFor="skip_if_txt_exists" style={{ marginRight: '10px' }}>Skip if .txt exists</label>
-                      <input
-                        type="checkbox"
-                        id="skip_if_txt_exists"
-                        className="skip-if-txt-exists-checkbox"
-                        checked={config.skip_if_txt_exists}
-                        onChange={(e) => handleConfigChange('skip_if_txt_exists', e.target.checked)}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <label htmlFor="recursive" style={{ marginRight: '10px' }}>Recursive</label>
+                      <label htmlFor="recursive" style={{ marginRight: '5px' }}>Recursive</label>
                       <input
                         type="checkbox"
                         id="recursive"
@@ -449,6 +439,17 @@ function App() {
                         onChange={(e) => handleConfigChange('recursive', e.target.checked)}
                       />
                     </div>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <label htmlFor="skip_if_txt_exists" style={{ marginRight: '40px' }}>Skip image if .txt exists</label>
+                      <input
+                        type="checkbox"
+                        id="skip_if_txt_exists"
+                        className="skip-if-txt-exists-checkbox"
+                        checked={config.skip_if_txt_exists}
+                        onChange={(e) => handleConfigChange('skip_if_txt_exists', e.target.checked)}
+                      />
+                    </div>
+
                   </div>
                   <div style={{ display: 'flex' }}>
                     <input
@@ -478,7 +479,7 @@ function App() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="global_metadata_file">Global Metadata File:</label>
+                <label htmlFor="global_metadata_file">Global Metadata File</label>
                 
                 <div className="directory-picker" style={{ display: 'flex' }}>
                   <input
@@ -508,7 +509,7 @@ function App() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="system_prompt">System Prompt:</label>
+                <label htmlFor="system_prompt">System Prompt</label>
                 
                 <textarea
                   type="text"
@@ -522,7 +523,7 @@ function App() {
               </div>
 
               <div className="form-group">
-                <label>Prompts:</label>
+                <label>Prompts</label>
                 <span className="description-text">Enter a series of 1 or more prompts to extract visual information.</span>
                 {config.prompts.map((prompt, index) => (
                   <div key={index} className="prompt-item">
@@ -555,7 +556,7 @@ function App() {
 
               {Object.keys(hintSources).length > 0 && (
                 <div className="form-group">
-                  <label>Hint Sources:</label>
+                  <label>Hint Sources</label>
                   <div className="hint-sources-info">
                     <span className="description-text">Select additional context sources to enhance captioning. These provide extra information to the model for better caption accuracy. These are typically sourced from your webscrapes, classifiers, alt-text, etc.</span>
                   </div>
