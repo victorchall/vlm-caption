@@ -72,7 +72,8 @@
         "target": "nsis",
         "arch": ["x64"]
       },
-      "icon": "build/icon.ico"
+      "icon": "build/icon.ico",
+      "artifactName": "VLM Caption Setup v${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,

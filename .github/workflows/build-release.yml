@@ -20,6 +20,10 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Read version from file
+        id: version
+        run: echo "VERSION_TAG=$(cat version.txt)" >> $env:GITHUB_OUTPUT
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -37,13 +41,13 @@ jobs:
           copy caption.yaml vlm-caption-cli\
           copy character_info.txt vlm-caption-cli\
           copy *.MD vlm-caption-cli\
-          powershell Compress-Archive -Path vlm-caption-cli\* -DestinationPath vlm-caption-cli.zip
+          powershell Compress-Archive -Path vlm-caption-cli\* -DestinationPath vlm-caption-cli-v${{ steps.version.outputs.VERSION_TAG }}.${{ github.run_number }}.zip
 
       - name: Upload CLI Artifact
         uses: actions/upload-artifact@v4
         with:
           name: vlm-caption-cli
-          path: vlm-caption-cli.zip
+          path: vlm-caption-cli-v${{ steps.version.outputs.VERSION_TAG }}.${{ github.run_number }}.zip
 
   build-electron:
     runs-on: windows-latest
@@ -61,6 +65,10 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Read version from file
+        id: version
+        run: echo "VERSION_TAG=$(cat version.txt)" >> $env:GITHUB_OUTPUT
+
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
@@ -71,6 +79,11 @@ jobs:
         run: |
           cd ui
           npm install
+
+      - name: Update package.json version
+        run: |
+          cd ui
+          npm version ${{ steps.version.outputs.VERSION_TAG }}.${{ github.run_number }} --no-git-tag-version
 
       - name: Build Electron App
         timeout-minutes: 30
@@ -119,14 +132,14 @@ jobs:
             Automated release containing both CLI and GUI versions of VLM Caption.
             
             📦 **Downloads:**
-            - `vlm-caption-cli.zip` - Command-line version
-            - `VLM Caption Setup *.exe` - GUI version (Windows installer)
+            - `vlm-caption-cli-v${{ steps.version.outputs.VERSION_TAG }}.${{ github.run_number }}.zip` - Command-line version
+            - `VLM Caption Setup v${{ steps.version.outputs.VERSION_TAG }}.${{ github.run_number }}.exe` - GUI version (Windows installer)
             
             🚀 **What's New:**
             - Latest updates from commit ${{ github.sha }}
           files: |
-            vlm-caption-cli*.zip
-            VLM Caption Setup*.exe
+            vlm-caption-cli-v*.zip
+            VLM Caption Setup v*.exe
           draft: false
           prerelease: false
         env:
