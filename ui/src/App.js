@@ -409,7 +409,7 @@ function App() {
           <div className="tab-content">
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
               <p style={{ margin: 0, marginRight: '15px' }}>Click the button below to start the captioning process</p>
-              <label style={{ display: 'flex', alignItems: 'right', fontSize: '14px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
                 <input
                   type="checkbox"
                   checked={useStreaming}

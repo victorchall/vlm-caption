@@ -12,11 +12,9 @@ from caption_openai import main as caption_main
 from hints.registration import get_available_hint_sources, get_hint_source_descriptions
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
-# Global variable to track if captioning is running
 captioning_in_progress = False
-# Global queue for streaming output
 output_queue = queue.Queue()
 
 @app.route('/api/run', methods=['POST'])
@@ -71,7 +69,6 @@ def health_check():
 
 @app.route('/api/hint_sources', methods=['GET'])
 def get_hint_sources():
-    """Get available hint sources and their descriptions"""
     try:
         # Get available hint sources
         hint_sources = get_available_hint_sources()
@@ -98,7 +95,6 @@ def get_hint_sources():
 
 @app.route('/api/config', methods=['GET'])
 def get_config():
-    """Get current configuration from caption.yaml"""
     try:
         config_path = 'caption.yaml'
         
@@ -123,7 +119,6 @@ def get_config():
 
 @app.route('/api/config', methods=['POST'])
 def update_config():
-    """Update configuration and save to caption.yaml"""
     try:
         # Get JSON data from request
         data = request.get_json()
@@ -190,7 +185,6 @@ class StreamingStdout:
         self.original_stdout.flush()
 
 def run_captioning_with_streaming():
-    """Run captioning process with streaming output"""
     global captioning_in_progress, output_queue
     
     try:
