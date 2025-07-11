@@ -80,7 +80,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "differentialPackage": false
+      "differentialPackage": false,
+      "license": "../LICENSE"
     }
   }
 }
