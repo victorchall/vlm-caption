@@ -16,7 +16,8 @@ function App() {
     base_directory: '',
     recursive: false,
     hint_sources: [],
-    global_metadata_file: ''
+    global_metadata_file: '',
+    skip_if_txt_exists: false
   });
   const [configLoading, setConfigLoading] = useState(false);
   const [configError, setConfigError] = useState('');
@@ -103,7 +104,8 @@ function App() {
           base_directory: data.config.base_directory || '',
           recursive: data.config.recursive || false,
           hint_sources: data.config.hint_sources || [],
-          global_metadata_file: data.config.global_metadata_file || ''
+          global_metadata_file: data.config.global_metadata_file || '',
+          skip_if_txt_exists: data.config.skip_if_txt_exists || false
         };
         setConfig(newConfig);
         if (newConfig.base_url) {
@@ -142,7 +144,8 @@ function App() {
             base_directory: config.base_directory,
             recursive: config.recursive,
             hint_sources: config.hint_sources,
-            global_metadata_file: config.global_metadata_file
+            global_metadata_file: config.global_metadata_file,
+            skip_if_txt_exists: config.skip_if_txt_exists
           }
         }),
       });
@@ -423,12 +426,21 @@ function App() {
                     placeholder="Leave empty for local models"
                   />
                 </div>
-
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
                     <label htmlFor="base_directory">Base Directory:</label>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <label htmlFor="recursive" style={{ marginRight: '5px' }}>Recursive</label>
+                      <label htmlFor="skip_if_txt_exists" style={{ marginRight: '10px' }}>Skip if .txt exists</label>
+                      <input
+                        type="checkbox"
+                        id="skip_if_txt_exists"
+                        className="skip-if-txt-exists-checkbox"
+                        checked={config.skip_if_txt_exists}
+                        onChange={(e) => handleConfigChange('skip_if_txt_exists', e.target.checked)}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <label htmlFor="recursive" style={{ marginRight: '10px' }}>Recursive</label>
                       <input
                         type="checkbox"
                         id="recursive"
@@ -438,7 +450,7 @@ function App() {
                       />
                     </div>
                   </div>
-                  <div className="directory-picker" style={{ display: 'flex' }}>
+                  <div style={{ display: 'flex' }}>
                     <input
                       type="text"
                       id="base_directory"
