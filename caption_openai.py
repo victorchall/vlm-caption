@@ -43,7 +43,7 @@ async def write_debug_messages(messages: List, i: int):
 
 async def process_image(client: openai.AsyncOpenAI, image_path, conf) -> Tuple[str,str,int,int]:
     """Process a single image and generate caption using an OpenAI compatible API. 
-    returns a tuple of: [final response, chat history obj, prompt_tokens_usage, completion_tokens_usage]"""
+    returns a tuple of: [final response, chat history jsondumps, prompt_tokens_usage, completion_tokens_usage]"""
     # Convert image to base64 string
     async with aiofiles.open(image_path, "rb") as image_file:
         file_contents = await image_file.read()

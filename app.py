@@ -27,17 +27,14 @@ def run_captioning():
     try:
         captioning_in_progress = True
         
-        # Capture stdout to return as response
         old_stdout = sys.stdout
         sys.stdout = captured_output = io.StringIO()
         
-        # Run the async main function
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(caption_main())
         loop.close()
         
-        # Get the captured output
         output = captured_output.getvalue()
         sys.stdout = old_stdout
         
@@ -132,22 +129,18 @@ def update_config():
         
         config_path = 'caption.yaml'
         
-        # Read current configuration
         current_config = {}
         if os.path.exists(config_path):
             with open(config_path, 'r', encoding='utf-8') as f:
                 current_config = yaml.safe_load(f) or {}
             
-            # Create backup of current config
             backup_path = f"{config_path}.backup"
             with open(config_path, 'r', encoding='utf-8') as src, open(backup_path, 'w', encoding='utf-8') as dst:
                 dst.write(src.read())
         
-        # Merge new config with existing config
         merged_config = current_config.copy()
         merged_config.update(new_config)
         
-        # Save merged configuration to YAML
         with open(config_path, 'w', encoding='utf-8') as f:
             yaml.dump(merged_config, f, default_flow_style=False, sort_keys=False)
         
@@ -197,24 +190,19 @@ def run_captioning_with_streaming():
             except queue.Empty:
                 break
         
-        # Replace stdout with streaming version
         original_stdout = sys.stdout
         sys.stdout = StreamingStdout(original_stdout, output_queue)
         
-        # Run the async main function
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(caption_main())
         loop.close()
         
-        # Send completion message
         output_queue.put("data: [COMPLETE]\n\n")
         
     except Exception as e:
-        # Send error message
         output_queue.put(f"data: [ERROR] {str(e)}\n\n")
     finally:
-        # Restore original stdout
         sys.stdout = original_stdout
         captioning_in_progress = False
 
@@ -232,10 +220,8 @@ def generate_stream():
     
     while True:
         try:
-            # Get output from queue with timeout
             output = output_queue.get(timeout=1)
             
-            # Check for completion or error signals
             if output.startswith("data: [COMPLETE]"):
                 yield output
                 break
@@ -243,7 +229,6 @@ def generate_stream():
                 yield output
                 break
             else:
-                # Send regular output
                 yield f"data: {output.rstrip()}\n\n"
                 
         except queue.Empty:
