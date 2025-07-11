@@ -324,13 +324,6 @@ function App() {
         {activeTab === 'run' && (
           <div className="tab-content">
             <p>Click the button below to start the captioning process</p>
-
-            {configSuccess && (
-              <div className="success">
-                <p>{configSuccess}</p>
-              </div>
-            )}
-
             <button
               onClick={runCaptioning}
               disabled={isRunning || isSaving}
@@ -338,6 +331,12 @@ function App() {
             >
               {isSaving ? 'Saving...' : (isRunning ? 'Running...' : 'Run Captioning')}
             </button>
+
+            {configSuccess && (
+              <div className="success">
+                <p>{configSuccess}</p>
+              </div>
+            )}
 
             {error && (
               <div className="error">
@@ -369,104 +368,106 @@ function App() {
 
 
             <form onSubmit={(e) => { e.preventDefault(); saveConfig(); }}>
-            <div>Config is saved automatically when you swap to Run tab.</div>
-              <div className="form-group">
-                <label htmlFor="base_url">Base URL:</label>
-                <input
-                  type="text"
-                  id="base_url"
-                  value={config.base_url}
-                  onChange={(e) => handleConfigChange('base_url', e.target.value)}
-                  placeholder="e.g., http://localhost:1234/v1"
-                />
-                <div>Copy from LM Studio developer tab.</div>
-              </div>              
-
-              <div className="form-group">
-                <label htmlFor="model">Model:</label>
-                <div className="model-selection">
-                  <select
-                    id="model"
-                    value={config.model}
-                    onChange={(e) => handleConfigChange('model', e.target.value)}
-                    disabled={modelsLoading || !config.base_url}
-                  >
-                    <option value="">
-                      {config.base_url ? 'Select a model' : 'Enter Base URL first'}
-                    </option>
-                    {models.map(modelId => (
-                      <option key={modelId} value={modelId}>
-                        {modelId}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => fetchModels(config.base_url)}
-                    disabled={modelsLoading || !config.base_url}
-                    className="reload-button"
-                  >
-                    {modelsLoading ? '...' : 'Refresh'}
-                  </button>
-                </div>
-                {modelsError && <p className="error-text">{modelsError}</p>}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="api_key">API Key:</label>
-                <input
-                  type="password"
-                  id="api_key"
-                  value={config.api_key}
-                  onChange={(e) => handleConfigChange('api_key', e.target.value)}
-                  placeholder="Leave empty for local models"
-                />
-              </div>
-
-              <div className="form-group">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
-                  <label htmlFor="base_directory">Base Directory:</label>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <label htmlFor="recursive" style={{ marginRight: '5px' }}>Recursive</label>
-                    <input
-                      type="checkbox"
-                      id="recursive"
-                      className="recursive-checkbox"
-                      checked={config.recursive}
-                      onChange={(e) => handleConfigChange('recursive', e.target.checked)}
-                    />
-                  </div>
-                </div>
-                <div className="directory-picker" style={{ display: 'flex' }}>
+              <div className="form-group side-by-side">
+                <div>
+                  <label htmlFor="base_url">Base URL:</label>
                   <input
                     type="text"
-                    id="base_directory"
-                    value={config.base_directory}
-                    onChange={(e) => handleConfigChange('base_directory', e.target.value)}
-                    placeholder="e.g., C:\Users\YourUser\Images"
-                    style={{ flex: 1, marginRight: '10px' }}
+                    id="base_url"
+                    value={config.base_url}
+                    onChange={(e) => handleConfigChange('base_url', e.target.value)}
+                    placeholder="e.g., http://localhost:1234/v1"
                   />
-                  <input
-                    type="file"
-                    webkitdirectory="true"
-                    style={{ display: 'none' }}
-                    ref={directoryInputRef}
-                    onChange={handleDirectorySelect}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => directoryInputRef.current.click()}
-                    className="reload-button"
-                  >
-                    Select...
-                  </button>
-
+                  <span className="description-text">Copy from LM Studio developer tab.</span>
                 </div>
 
+                <div>
+                  <label htmlFor="model">Model:</label>
+                  <div className="model-selection">
+                    <select
+                      id="model"
+                      value={config.model}
+                      onChange={(e) => handleConfigChange('model', e.target.value)}
+                      disabled={modelsLoading || !config.base_url}
+                    >
+                      <option value="">
+                        {config.base_url ? 'Select a model' : 'Enter Base URL first'}
+                      </option>
+                      {models.map(modelId => (
+                        <option key={modelId} value={modelId}>
+                          {modelId}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => fetchModels(config.base_url)}
+                      disabled={modelsLoading || !config.base_url}
+                      className="reload-button"
+                    >
+                      {modelsLoading ? '...' : 'Refresh'}
+                    </button>
+                  </div>
+                  {modelsError && <p className="error-text">{modelsError}</p>}
+                </div>
+              </div>
+
+              <div className="form-group side-by-side api-key-directory">
+                <div>
+                  <label htmlFor="api_key">API Key:</label>
+                  <input
+                    type="password"
+                    id="api_key"
+                    value={config.api_key}
+                    onChange={(e) => handleConfigChange('api_key', e.target.value)}
+                    placeholder="Leave empty for local models"
+                  />
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
+                    <label htmlFor="base_directory">Base Directory:</label>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <label htmlFor="recursive" style={{ marginRight: '5px' }}>Recursive</label>
+                      <input
+                        type="checkbox"
+                        id="recursive"
+                        className="recursive-checkbox"
+                        checked={config.recursive}
+                        onChange={(e) => handleConfigChange('recursive', e.target.checked)}
+                      />
+                    </div>
+                  </div>
+                  <div className="directory-picker" style={{ display: 'flex' }}>
+                    <input
+                      type="text"
+                      id="base_directory"
+                      value={config.base_directory}
+                      onChange={(e) => handleConfigChange('base_directory', e.target.value)}
+                      placeholder="e.g., C:\Users\YourUser\Images"
+                      style={{ flex: 1, marginRight: '10px' }}
+                    />
+                    <input
+                      type="file"
+                      webkitdirectory="true"
+                      style={{ display: 'none' }}
+                      ref={directoryInputRef}
+                      onChange={handleDirectorySelect}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => directoryInputRef.current.click()}
+                      className="reload-button"
+                    >
+                      Select...
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="form-group">
                 <label htmlFor="global_metadata_file">Global Metadata File:</label>
+                
                 <div className="directory-picker" style={{ display: 'flex' }}>
                   <input
                     type="text"
@@ -491,10 +492,12 @@ function App() {
                     Select...
                   </button>
                 </div>
+                <span className="description-text">(Optional) A .txt file to provide additional context for image analysis, helping the model generate more accurate caption, such as a codex with character and location visual descriptions.</span>
               </div>
 
               <div className="form-group">
                 <label htmlFor="system_prompt">System Prompt:</label>
+                
                 <textarea
                   type="text"
                   id="system_prompt"
@@ -503,11 +506,12 @@ function App() {
                   placeholder="You are an expert image analyzer..."
                   rows="3"
                 />
+                <span className="description-text">(Optional) General directives to the VLM for all steps.</span>
               </div>
 
               <div className="form-group">
                 <label>Prompts:</label>
-                <div>Enter a series of 1 or more prompts to extract visual information.</div>
+                <span className="description-text">Enter a series of 1 or more prompts to extract visual information.</span>
                 {config.prompts.map((prompt, index) => (
                   <div key={index} className="prompt-item">
                     <textarea
@@ -526,7 +530,8 @@ function App() {
                   </div>
 
                 ))}
-                <div><b><i>Last prompt will generate the caption.</i></b></div>
+                <span className="description-text"><b>Last prompt will generate the caption.</b></span>
+                <br/>
                 <button
                   type="button"
                   onClick={addPrompt}
@@ -540,7 +545,7 @@ function App() {
                 <div className="form-group">
                   <label>Hint Sources:</label>
                   <div className="hint-sources-info">
-                    Select additional context sources to enhance captioning. These provide extra information to the model for better caption accuracy.
+                    <span className="description-text">Select additional context sources to enhance captioning. These provide extra information to the model for better caption accuracy. These are typically sourced from your webscrapes, classifiers, alt-text, etc.</span>
                   </div>
                   {hintSourcesLoading && <p>Loading hint sources...</p>}
                   {hintSourcesError && <p className="error-text">{hintSourcesError}</p>}

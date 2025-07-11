@@ -157,13 +157,13 @@ def update_config():
         actual_saved_path = os.path.abspath(config_path)
         return jsonify({
             'success': True,
-            'message': f'Configuration updated successfully to {actual_saved_path}'
+            'message': f'Configuration saved to {actual_saved_path}'
         })
     
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': f'Failed to update configuration: {str(e)}'
+            'error': f'Failed to save configuration: {str(e)}'
         }), 500
 
 if __name__ == '__main__':
