@@ -37,7 +37,7 @@ jobs:
           copy caption.yaml vlm-caption-cli\
           copy character_info.txt vlm-caption-cli\
           copy *.MD vlm-caption-cli\
-          powershell Compress-Archive -Path vlm-caption-cli\* -DestinationPath vlm-caption-cli.zip
+          powershell Compress-Archive -Path vlm-caption-cli\* -DestinationPath vlm-caption-cli-v${{ steps.version.outputs.VERSION_TAG }}.zip
 
       - name: Upload CLI Artifact
         uses: actions/upload-artifact@v4
@@ -74,10 +74,13 @@ jobs:
 
       - name: Build Electron App
         timeout-minutes: 30
+        env:
+          VERSION_TAG: ${{ steps.version.outputs.VERSION_TAG }}
         run: |
           cd ui
           npm run build:backend
           npm run build
+          npm version ${VERSION_TAG} --allow-same-version
           npx electron-builder --win --publish=never
 
       - name: Upload Electron Artifact
@@ -119,13 +122,13 @@ jobs:
             Automated release containing both CLI and GUI versions of VLM Caption.
             
             📦 **Downloads:**
-            - `vlm-caption-cli.zip` - Command-line version
-            - `VLM Caption Setup *.exe` - GUI version (Windows installer)
+            - `vlm-caption-cli-v${{ steps.version.outputs.VERSION_TAG }}.zip` - Command-line version
+            - `VLM.Caption.Setup.${{ steps.version.outputs.VERSION_TAG }}.exe` - GUI version (Windows installer)
             
             🚀 **What's New:**
             - Latest updates from commit ${{ github.sha }}
           files: |
-            vlm-caption-cli*.zip
+            vlm-caption-cli-v${{ steps.version.outputs.VERSION_TAG }}.zip
             VLM Caption Setup*.exe
           draft: false
           prerelease: false
