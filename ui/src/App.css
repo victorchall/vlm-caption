@@ -151,6 +151,7 @@
   background-color: #ffffff;
   color: #495057;
   box-sizing: border-box;
+  font-weight: bold;
 }
 
 .form-group input:focus {
@@ -163,13 +164,6 @@
   color: #6c757d;
 }
 
-/* Form Actions */
-.form-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 30px;
-  justify-content: center;
-}
 
 .save-button {
   background-color: #28a745;

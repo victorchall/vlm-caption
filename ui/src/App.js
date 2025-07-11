@@ -324,9 +324,15 @@ function App() {
         {activeTab === 'run' && (
           <div className="tab-content">
             <p>Click the button below to start the captioning process</p>
-            
-            <button 
-              onClick={runCaptioning} 
+
+            {configSuccess && (
+              <div className="success">
+                <p>{configSuccess}</p>
+              </div>
+            )}
+
+            <button
+              onClick={runCaptioning}
               disabled={isRunning || isSaving}
               className="run-button"
             >
@@ -351,9 +357,9 @@ function App() {
 
         {/* Configuration Tab */}
         {activeTab === 'config' && (
-          <div className="tab-content">            
+          <div className="tab-content">
             {configLoading && <p>Loading configuration...</p>}
-            
+
             {configError && (
               <div className="error">
                 <h3>Error:</h3>
@@ -361,25 +367,9 @@ function App() {
               </div>
             )}
 
-            {configSuccess && (
-              <div className="success">
-                <p>{configSuccess}</p>
-              </div>
-            )}
 
             <form onSubmit={(e) => { e.preventDefault(); saveConfig(); }}>
-              
-              <div className="form-actions">
-                <button 
-                  type="button" 
-                  onClick={loadConfig}
-                  disabled={configLoading}
-                  className="reload-button"
-                >
-                  Reload
-                </button>
-              </div>
-              <div>Config is saved automatically when you swap to Run tab.</div>
+            <div>Config is saved automatically when you swap to Run tab.</div>
               <div className="form-group">
                 <label htmlFor="base_url">Base URL:</label>
                 <input
