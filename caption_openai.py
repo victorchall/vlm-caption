@@ -140,7 +140,7 @@ async def main():
         try:
             caption_text, chat_history, prompt_token_usage, completion_token_usage = await process_image(client, image_path, conf)
         except openai.APIConnectionError as e:
-            print(f"{e}\nAPI Error. Check that your service is running and captoin.yaml has the correct base_url")
+            print(f"{e}\nAPI Error. Check that your service is running and caption.yaml has the correct base_url")
         
         # aggregated_prompt_token_usage += prompt_token_usage
         # aggregated_completion_token_usage += aggregated_completion_token_usage
@@ -151,7 +151,7 @@ async def main():
     
     print(F" -> JOB COMPLETE.")
     # not working?
-    #print(f"aggregated_prompt_token_usage: {aggregated_prompt_token_usage}, aggregated_completion_token_usage: {aggregated_completion_token_usage}")
+    print(f"aggregated_prompt_token_usage: {aggregated_prompt_token_usage}, aggregated_completion_token_usage: {aggregated_completion_token_usage}")
 
 if __name__ == "__main__":
     asyncio.run(main())

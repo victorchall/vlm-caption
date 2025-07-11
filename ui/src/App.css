@@ -62,28 +62,29 @@
 }
 
 .output {
-  background-color: #d4edda;
+  background-color: #08140a;
   color: #155724;
   border: 1px solid #c3e6cb;
   border-radius: 5px;
   padding: 15px;
   margin-top: 20px;
-  max-width: 80%;
   text-align: left;
 }
 
 .output h3 {
   margin-top: 0;
-  color: #155724;
+  color: #3fcf61;
 }
 
 .error pre, .output pre {
+  background-color: #1b221d;
+  color: #d2d2d2;
   white-space: pre-wrap;
   word-wrap: break-word;
   font-family: 'Courier New', monospace;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   line-height: 1.4;
-  max-height: 400px;
+  max-height: 600px;
   overflow-y: auto;
 }
 
@@ -185,7 +186,8 @@
 }
 
 .form-group input::placeholder {
-  color: #6c757d;
+  color: #c2c6cb;
+  font-style: oblique;
 }
 
 .save-button {
