@@ -73,7 +73,7 @@
         "arch": ["x64"]
       },
       "icon": "build/icon.ico",
-      "artifactName": "VLM Caption Setup v${version}.${ext}"
+      "artifactName": "VLM_Caption_Setup_v${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,

@@ -66,6 +66,7 @@ Setup your venv and install requirements.
 To run the entire app:
     
     cd ui
+    npm install # one time or to update packages
     npm run electron-dev
 
 This should launch the app with web debugger so you can live-edit the react app.  It will also launch the backend api (app.py), but the api will require a restart for changes.
@@ -86,4 +87,4 @@ When built via the github action and installed on Windows via the installer, the
 
 ### Tips
 
-Watch what port is captured for the flask api when the application is started.  It will try to get port 5000 or increment if not available.  If it gets 5001+ it may mean another instance of the api is still running and needs to be killed manually.
+Watch what port is captured for the flask api when the application is started.  It will try to get port 5000 or increment if not available.  If it gets 5001+ it may mean another instance of the api is still running and needs to be killed manually.  The app should attempt a shutdown of the API if you close the app, but its possible for that process to fail.
