@@ -1,13 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
+import ConfigForm from './components/ConfigForm';
+import RunTab from './components/RunTab';
 
 function App() {
   const [apiPort, setApiPort] = useState(null);
-  const [isRunning, setIsRunning] = useState(false);
-  const [output, setOutput] = useState('');
-  const [error, setError] = useState('');
-  const [streamingOutput, setStreamingOutput] = useState('');
-  const [useStreaming, setUseStreaming] = useState(true);
   const [activeTab, setActiveTab] = useState('config');
   const [config, setConfig] = useState({
     base_url: '',
@@ -31,9 +28,6 @@ function App() {
   const [hintSources, setHintSources] = useState({});
   const [hintSourcesLoading, setHintSourcesLoading] = useState(false);
   const [hintSourcesError, setHintSourcesError] = useState('');
-  const directoryInputRef = useRef(null);
-  const metadataFileInputRef = useRef(null);
-  const outputRef = useRef(null);
   // Fetch models from base_url
   const fetchModels = async (baseUrl) => {
     if (!baseUrl) {
@@ -184,23 +178,6 @@ function App() {
     });
   };
 
-  // Handle prompt changes
-  const handlePromptChange = (index, value) => {
-    const newPrompts = [...config.prompts];
-    newPrompts[index] = value;
-    handleConfigChange('prompts', newPrompts);
-  };
-
-  // Add a new prompt
-  const addPrompt = () => {
-    handleConfigChange('prompts', [...config.prompts, '']);
-  };
-
-  // Remove a prompt
-  const removePrompt = (index) => {
-    const newPrompts = config.prompts.filter((_, i) => i !== index);
-    handleConfigChange('prompts', newPrompts);
-  };
 
   const handleTabSwitch = async (tab) => {
     if (tab === 'run') {
@@ -209,26 +186,6 @@ function App() {
     setActiveTab(tab);
   };
 
-  const handleDirectorySelect = (e) => {
-    if (e.target.files.length > 0) {
-      const file = e.target.files[0];
-      // In Electron, file.path provides the absolute path.
-      // We can derive the directory path from the path of the first file.
-      const path = file.path;
-      const lastSeparatorIndex = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
-      const directoryPath = path.substring(0, lastSeparatorIndex);
-      handleConfigChange('base_directory', directoryPath);
-    }
-  };
-
-  const handleMetadataFileSelect = (e) => {
-    if (e.target.files.length > 0) {
-      const file = e.target.files[0];
-      // In Electron, file.path provides the absolute path
-      const path = file.path;
-      handleConfigChange('global_metadata_file', path);
-    }
-  };
 
   // Load configuration on component mount
   useEffect(() => {
@@ -275,113 +232,6 @@ function App() {
     }
   };
 
-  // Auto-scroll to bottom of output
-  useEffect(() => {
-    if (outputRef.current) {
-      outputRef.current.scrollTop = outputRef.current.scrollHeight;
-    }
-  }, [streamingOutput]);
-
-  const runCaptioning = async () => {
-    if (!apiPort) return;
-    setIsRunning(true);
-    setOutput('');
-    setError('');
-
-    try {
-      const response = await fetch(`http://localhost:${apiPort}/api/run`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setOutput(data.output);
-      } else {
-        setError(data.error || 'An error occurred');
-      }
-    } catch (err) {
-      setError('Failed to connect to the server');
-    } finally {
-      setIsRunning(false);
-    }
-  };
-
-  const runCaptioningWithStreaming = () => {
-    if (!apiPort) return;
-    setIsRunning(true);
-    setStreamingOutput('');
-    setOutput('');
-    setError('');
-
-    // Helper function to truncate output if it exceeds 10k characters
-    const truncateOutput = (currentOutput, newData) => {
-      const combined = currentOutput + newData;
-      const MAX_CHARS = 10000;
-      const TRUNCATE_TO = 8000; // Keep 8k chars after truncation for buffer
-      
-      if (combined.length <= MAX_CHARS) {
-        return combined;
-      }
-      
-      // Find a good place to truncate (preferably at a line break)
-      const truncatePoint = combined.length - TRUNCATE_TO;
-      const truncateStart = combined.indexOf('\n', truncatePoint);
-      const actualTruncatePoint = truncateStart !== -1 ? truncateStart + 1 : truncatePoint;
-      
-      const truncated = combined.substring(actualTruncatePoint);
-      return '...[output truncated]...\n' + truncated;
-    };
-
-    // Create EventSource for Server-Sent Events
-    const eventSource = new EventSource(`http://localhost:${apiPort}/api/run-stream`, {
-      withCredentials: false
-    });
-
-    eventSource.onmessage = (event) => {
-      const data = event.data;
-      
-      // Handle special control messages
-      if (data.startsWith('[STARTED]')) {
-        setStreamingOutput(prev => truncateOutput(prev, data.substring(9) + '\n'));
-      } else if (data.startsWith('[COMPLETE]')) {
-        setStreamingOutput(prev => truncateOutput(prev, '\n🎉 Captioning completed successfully!\n'));
-        setIsRunning(false);
-        eventSource.close();
-      } else if (data.startsWith('[ERROR]')) {
-        setError(data.substring(7));
-        setIsRunning(false);
-        eventSource.close();
-      } else if (data === '[KEEPALIVE]') {
-        // Ignore keepalive messages
-      } else {
-        // Regular output
-        setStreamingOutput(prev => truncateOutput(prev, data + '\n'));
-      }
-    };
-
-    eventSource.onerror = (error) => {
-      console.error('EventSource error:', error);
-      setError('Connection to server lost');
-      setIsRunning(false);
-      eventSource.close();
-    };
-
-    // Store reference to close if needed
-    window.currentEventSource = eventSource;
-  };
-
-  const handleRunCaptioning = () => {
-    if (useStreaming) {
-      runCaptioningWithStreaming();
-    } else {
-      runCaptioning();
-    }
-  };
-
   return (
     <div className="App">
       <header className="App-header">
@@ -406,296 +256,31 @@ function App() {
 
         {/* Run Tab */}
         {activeTab === 'run' && (
-          <div className="tab-content">
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-              <p style={{ margin: 0, marginRight: '15px' }}>Click the button below to start the captioning process</p>
-              <label style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
-                <input
-                  type="checkbox"
-                  checked={useStreaming}
-                  onChange={(e) => setUseStreaming(e.target.checked)}
-                  style={{ marginRight: '5px' }}
-                />
-                Real-time streaming
-              </label>
-            </div>
-            
-            <button
-              onClick={handleRunCaptioning}
-              disabled={isRunning || isSaving}
-              className="run-button"
-            >
-              {isSaving ? 'Saving...' : (isRunning ? 'Running...' : 'Run Captioning')}
-            </button>
-
-            {configSuccess && (
-              <div className="success">
-                <p>{configSuccess}</p>
-              </div>
-            )}
-
-            {error && (
-              <div className="error">
-                <h3>Error:</h3>
-                <pre>{error}</pre>
-              </div>
-            )}
-
-            {/* Streaming output */}
-            {streamingOutput && (
-              <div className="output">
-                <h3>Live Output:</h3>
-                <pre
-                  ref={outputRef}
-                >
-                  {streamingOutput}
-                </pre>
-              </div>
-            )}
-
-            {/* Regular output (fallback) */}
-            {output && !streamingOutput && (
-              <div className="output">
-                <h3>Output:</h3>
-                <pre>{output}</pre>
-              </div>
-            )}
-          </div>
+          <RunTab
+            apiPort={apiPort}
+            configSuccess={configSuccess}
+            isSaving={isSaving}
+            onSaveConfig={saveConfig}
+          />
         )}
 
         {/* Configuration Tab */}
         {activeTab === 'config' && (
-          <div className="tab-content">
-            {configLoading && <p>Loading configuration...</p>}
-
-            {configError && (
-              <div className="error">
-                <h3>Error:</h3>
-                <pre>{configError}</pre>
-              </div>
-            )}
-
-
-            <form onSubmit={(e) => { e.preventDefault(); saveConfig(); }}>
-              <div className="form-group side-by-side">
-                <div>
-                  <label htmlFor="base_url">Base URL</label>
-                  <input
-                    type="text"
-                    id="base_url"
-                    value={config.base_url}
-                    onChange={(e) => handleConfigChange('base_url', e.target.value)}
-                    placeholder="e.g., http://localhost:1234/v1"
-                  />
-                  <span className="description-text">Copy from LM Studio developer tab.</span>
-                </div>
-
-                <div>
-                  <label htmlFor="model">Model</label>
-                  <div className="model-selection">
-                    <select
-                      id="model"
-                      value={config.model}
-                      onChange={(e) => handleConfigChange('model', e.target.value)}
-                      disabled={modelsLoading || !config.base_url}
-                    >
-                      <option value="">
-                        {config.base_url ? 'Select a model' : 'Enter Base URL first'}
-                      </option>
-                      {models.map(modelId => (
-                        <option key={modelId} value={modelId}>
-                          {modelId}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => fetchModels(config.base_url)}
-                      disabled={modelsLoading || !config.base_url}
-                      className="reload-button"
-                    >
-                      {modelsLoading ? '...' : 'Refresh'}
-                    </button>
-                  </div>
-                  {modelsError && <p className="error-text">{modelsError}</p>}
-                </div>
-              </div>
-
-              <div className="form-group side-by-side api-key-directory">
-                <div>
-                  <label htmlFor="api_key">API Key</label>
-                  <input
-                    type="password"
-                    id="api_key"
-                    value={config.api_key}
-                    onChange={(e) => handleConfigChange('api_key', e.target.value)}
-                    placeholder="Leave empty for local models"
-                  />
-                </div>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
-                    <label htmlFor="base_directory">Base Directory</label>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <label htmlFor="recursive" style={{ marginRight: '5px' }}>Recursive</label>
-                      <input
-                        type="checkbox"
-                        id="recursive"
-                        className="recursive-checkbox"
-                        checked={config.recursive}
-                        onChange={(e) => handleConfigChange('recursive', e.target.checked)}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <label htmlFor="skip_if_txt_exists" style={{ marginRight: '40px' }}>Skip image if .txt exists</label>
-                      <input
-                        type="checkbox"
-                        id="skip_if_txt_exists"
-                        className="skip-if-txt-exists-checkbox"
-                        checked={config.skip_if_txt_exists}
-                        onChange={(e) => handleConfigChange('skip_if_txt_exists', e.target.checked)}
-                      />
-                    </div>
-
-                  </div>
-                  <div style={{ display: 'flex' }}>
-                    <input
-                      type="text"
-                      id="base_directory"
-                      value={config.base_directory}
-                      onChange={(e) => handleConfigChange('base_directory', e.target.value)}
-                      placeholder="e.g., C:\Users\YourUser\Images"
-                      style={{ flex: 1, marginRight: '10px' }}
-                    />
-                    <input
-                      type="file"
-                      webkitdirectory="true"
-                      style={{ display: 'none' }}
-                      ref={directoryInputRef}
-                      onChange={handleDirectorySelect}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => directoryInputRef.current.click()}
-                      className="reload-button"
-                    >
-                      Select...
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="global_metadata_file">Global Metadata File</label>
-                
-                <div className="directory-picker" style={{ display: 'flex' }}>
-                  <input
-                    type="text"
-                    id="global_metadata_file"
-                    value={config.global_metadata_file}
-                    onChange={(e) => handleConfigChange('global_metadata_file', e.target.value)}
-                    placeholder="e.g., C:\Users\YourUser\metadata.txt"
-                    style={{ flex: 1, marginRight: '10px' }}
-                  />
-                  <input
-                    type="file"
-                    accept=".txt"
-                    style={{ display: 'none' }}
-                    ref={metadataFileInputRef}
-                    onChange={handleMetadataFileSelect}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => metadataFileInputRef.current.click()}
-                    className="reload-button"
-                  >
-                    Select...
-                  </button>
-                </div>
-                <span className="description-text">(Optional) A .txt file to provide additional context for image analysis, helping the model generate more accurate caption, such as a codex with character and location visual descriptions.</span>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="system_prompt">System Prompt</label>
-                
-                <textarea
-                  type="text"
-                  id="system_prompt"
-                  value={config.system_prompt}
-                  onChange={(e) => handleConfigChange('system_prompt', e.target.value)}
-                  placeholder="You are an expert image analyzer..."
-                  rows="3"
-                />
-                <span className="description-text">(Optional) General directives to the VLM for all steps.</span>
-              </div>
-
-              <div className="form-group">
-                <label>Prompts</label>
-                <span className="description-text">Enter a series of 1 or more prompts to extract visual information.</span>
-                {config.prompts.map((prompt, index) => (
-                  <div key={index} className="prompt-item">
-                    <textarea
-                      value={prompt}
-                      onChange={(e) => handlePromptChange(index, e.target.value)}
-                      placeholder={`Prompt ${index + 1}`}
-                      rows="3"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removePrompt(index)}
-                      className="remove-prompt-button"
-                    >
-                      &times;
-                    </button>
-                  </div>
-
-                ))}
-                <span className="description-text"><b>Last prompt will generate the caption.</b></span>
-                <br/>
-                <button
-                  type="button"
-                  onClick={addPrompt}
-                  className="add-prompt-button"
-                >
-                  Add Prompt
-                </button>
-              </div>
-
-              {Object.keys(hintSources).length > 0 && (
-                <div className="form-group">
-                  <label>Hint Sources</label>
-                  <div className="hint-sources-info">
-                    <span className="description-text">Select additional context sources to enhance captioning. These provide extra information to the model for better caption accuracy. These are typically sourced from your webscrapes, classifiers, alt-text, etc.</span>
-                  </div>
-                  {hintSourcesLoading && <p>Loading hint sources...</p>}
-                  {hintSourcesError && <p className="error-text">{hintSourcesError}</p>}
-                  <div className="hint-sources-container">
-                    {Object.entries(hintSources).map(([sourceKey, sourceData]) => (
-                      <div key={sourceKey} className="hint-source-item">
-                        <div className="hint-source-key">
-                          {sourceData.display_name}
-                        </div>
-                        <div className="hint-source-description">
-                          {sourceData.description}
-                        </div>
-                        <label className="hint-source-checkbox">
-                          <input
-                            type="checkbox"
-                            checked={config.hint_sources.includes(sourceKey)}
-                            onChange={(e) => {
-                              const newHintSources = e.target.checked
-                                ? [...config.hint_sources, sourceKey]
-                                : config.hint_sources.filter(s => s !== sourceKey);
-                              handleConfigChange('hint_sources', newHintSources);
-                            }}
-                          />
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </form>
-          </div>
+          <ConfigForm
+            config={config}
+            onConfigChange={handleConfigChange}
+            onSave={saveConfig}
+            models={models}
+            modelsLoading={modelsLoading}
+            modelsError={modelsError}
+            onFetchModels={fetchModels}
+            hintSources={hintSources}
+            hintSourcesLoading={hintSourcesLoading}
+            hintSourcesError={hintSourcesError}
+            isSaving={isSaving}
+            configLoading={configLoading}
+            configError={configError}
+          />
         )}
       </header>
     </div>

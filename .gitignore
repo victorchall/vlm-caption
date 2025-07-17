@@ -3,7 +3,7 @@ __pycache__/
 /build/
 /dist/
 node_modules/
-messages_*.txt
+
 
 # Electron and Node.js build artifacts
 ui/node_modules/
@@ -13,4 +13,9 @@ ui/public/backend/
 
 # PyInstaller spec files
 *.spec
+
 .env
+
+# other temp app files
+caption.yaml.backup
+messages_*.txt
