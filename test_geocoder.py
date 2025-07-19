@@ -14,7 +14,8 @@ def test_geocoder():
         assert admin1_name == "Shizuoka", "wrong prefecture returned"
         assert country == "Japan", "wrong country returned"
         query1_time = end_time - start_time
-        print(f"Query time: {query1_time:.4f} seconds")
+        print(f"test1 result: {location_name, admin1_name, country}")
+        print(f"Query time: {query1_time:.5f} seconds")
         print("✓ Geocoder works")
     except Exception as e:
         print(f"✗ Class-based approach failed: {e}")
@@ -30,7 +31,7 @@ def test_geocoder():
         assert admin1_name == "New York", "wrong city returned"
         assert country == "United States", "wrong country returned"
         query2_time = end_time - start_time
-        print(f"Second query time: {query2_time:.4f} seconds")
+        print(f"Second query time: {query2_time:.5f} seconds")
         assert query2_time < (query1_time/1000), "Time should be significantly less on second call"
         print("✓ Caching works (second query should be lightning fast)")
     except Exception as e:
