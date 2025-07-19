@@ -23,7 +23,7 @@ Multiple hint sources can be enabled simultaneously. They will be combined and p
 
 ### - full_path
 
-**Purpose**: Provides the complete file path and filename to the VLM.
+Provides the complete file path and filename to the VLM.
 
 **Output Format**:
 ```
@@ -35,7 +35,7 @@ This is useful if you have prepared your data into directories with names that a
 
 ### - metadata
 
-**Purpose**: Reads **directory-level** metadata from `metadata.json` files and includes it as context.
+Reads **directory-level** metadata from `metadata.json` files and includes it as context.
 
 **How it Works**:
 - Looks for a `metadata.json` file in the same directory as each image
@@ -84,6 +84,34 @@ Looks for a .json file with the same directory and basename as each image file.
 
 This is similar to above metadata but on a **per-image** basis. If you write webscrapers this is particular useful since you can save metadata (title, header, alt-text) as you go
 
+### - exif
+
+Extracts EXIF (Exchangeable Image File Format) metadata directly from image files.
+
+A reverse GPS lookup is performed if GPS data is included in the EXIF to get a useful location name, admin1zone (state/province), and country.  Location information is based on some filtering and translation of the [Geonames](https://www.geonames.org/) dataset ([CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/)).  Approximately 13 million points are included.
+For the first query during a run and on first GPS EXIF data encountered the KD tree will be built taking about 30 seconds, but every subsequent query thereafter is a fraction of a millisecond.
+
+**Example Output Format**:
+```
+EXIF Metadata:
+- Camera: Canon EOS R5
+- Date taken: 2024:03:15 14:32:18
+- ISO: 800
+- Aperture: f/2.8
+- Shutter speed: 1/250
+- Focal length: 85mm
+- Location: San Francisco, California, United States
+```
+
+**Configuration**: Add `"exif"` to your `hint_sources` list in `caption.yaml`.
+
+**Important Notes**:
+- Not all image formats support EXIF data (PNG typically doesn't, JPEG typically does)
+- EXIF data availability depends on camera settings and image processing
+- GPS data is only included if location services were enabled when the photo was taken
+- Some image editing software may strip EXIF data during processing
+- The hint source (should) gracefully handles missing or corrupted EXIF data
+
 ## Extensibility
 
 Developers can easily add new hint sources by:
@@ -101,7 +129,7 @@ These are generally simple enough that an LLM can write them for you if you just
 ### Performance Considerations
 
 - Hint sources are processed synchronously before the first API call for a given image
-- Consider keeping hints relatively lightweight to avoid adding slowing the captioning process
+- Consider keeping hints relatively lightweight (<50ms) to avoid slowing the captioning process
 - Guard against failure cases (missing data source, etc)
 
 ## Error Handling

@@ -177,19 +177,19 @@ Congrats! You're running your own offline LLM/VLM server.
 
 - **Utilize metadata**: Try writing a text file with details of the overall "universe" of your image data and reference the txt file with `global_metadata_file` in `caption.yaml`. Use the example `global_metadata_file: "character_info.txt"` as a reference for what to do.
 
-- **Model Selection**: Different models may excel at different types of image analysis. 
+- **Model Selection**: Different models may be better or worse at multi-turn processing. 
     
     If you have a >=24GB GPU, I highly recommend Gemma 27B (`gemma-3-27b-it`).  Q4_K_M is about 19.5GB, leaving ~4GB for context and kv caching which is typically sufficient. If you have 32GB or more, use a larger quantization (Q5_K_M, Q8_0, etc). 
 
     InternVL3-14B is a good alternative smaller model for users with 16GB or less. 
 
-    Models published by `unsloth` or `lmstudio-community` are generally reliable and will work.  Sometimes some models are not properly marked as vision capable or are misconfigured.  If it doesn't seem to work, see if there is an unsloth or lmstudio-community verson.
+    Models published by `unsloth` or `lmstudio-community` are generally reliable and will work.  Sometimes some models are not properly marked as vision capable or are misconfigured and may not work.  If it doesn't seem to work, see if there is an unsloth or lmstudio-community verson, or just try a different version of the same model.
 
     Not all models are suitable for multi-turn conversation. Try different models, or you can try a single prompt.
 
-    Test the model directly in the Chat window in LM Studio to see how it responds and to workshop your series of prompts.  Or try running the app on a directory with just a few images, then check the .txt outputs. 
+    Test the model directly in the Chat window in LM Studio to see how it responds and to workshop your series of prompts.  And try running the VLM Caption app on a directory with just a few images, then check the .txt outputs before you run it on thousands or more. 
 
-- **Cuda OOM or Failures**: You may need to reduce the number of prompts in your chain if you run out of VRAM, or select a smaller quantization of the model (Q3_K_S, etc), or select a smaller model. You may also need to configure your service to increase the context size as the default is often 4096, which you could exceed with very long chains of prompts, leading to unintended outputs depending on how the service truncates. Check your service logs to spot errors. Refer to the documentation of the service to change the configuration.
+- **Cuda OOM or Failures**: You may need to reduce the number of prompts in your chain if you run out of VRAM, or select a smaller quantization of the model (Q3_K_S, etc), or select a smaller model. You may also need to configure your service to increase the context size as the default is often 4096, which you could exceed with very long chains of prompts or substantial metadata, leading to unintended outputs depending on how the service truncates. Check your service logs to spot errors, and refer to the documentation of the service to change the configuration.
 
 ## Advanced tip
 
@@ -199,7 +199,10 @@ Congrats! You're running your own offline LLM/VLM server.
 
     See [HINTSOURCES.md](HINTSOURCES.md) for more information.
 
-
 ## Dev
 
 See [DEV.md](DEV.md) 
+
+## Special thanks
+
+GPS location reverse lookup data for EXIF GPS processing is based on the [Geonames](https://www.geonames.org/) dataset ([CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/))
