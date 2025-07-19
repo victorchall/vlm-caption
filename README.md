@@ -1,4 +1,7 @@
 # VLM Image Captioning Tool
+<div style="text-align: center;">
+  <img src="doc/main_gui.png" alt="VLM-Caption Main GUI" width="600">
+</div>
 
 This app uses Vision Language Models (VLM) to generate detailed captions for images through multi-turn conversations, using a separately hosted VLM models via an "OpenAI-compatible" API (*including locally hosted models*).
 
