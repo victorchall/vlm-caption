@@ -38,7 +38,7 @@ Slightly old video, app overview with install: [VLM Caption, multi-turn, data-dr
 - **Bulk Processing**: Process entire directories of images
 - **Output**: Saves captions as .txt files alongside original images
 
-A GUI is a work-in-progress, but will not be much more than a simple wrapper to edit `caption.yaml`, thus low priority.
+The GUI is a simple wrapper to edit `caption.yaml` if you wish to just use CLI.
 
 ## Configuration
 
