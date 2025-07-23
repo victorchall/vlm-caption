@@ -132,8 +132,8 @@ jobs:
             Automated release containing both CLI and GUI versions of VLM Caption.
             
             📦 **Downloads:**
-            - `vlm-caption-cli-v${{ steps.version.outputs.VERSION_TAG }}.${{ github.run_number }}.zip` - Command-line version
-            - `VLM Caption Setup v${{ steps.version.outputs.VERSION_TAG }}.${{ github.run_number }}.exe` - GUI version (Windows installer)
+            - `vlm-caption-cli-v${{ steps.version.outputs.VERSION_TAG }}.${{ github.run_number }}.zip` - Windows command-line (unzip and run)
+            - `VLM_Caption_Setup_v${{ steps.version.outputs.VERSION_TAG }}.${{ github.run_number }}.exe` - GUI version (Windows installer)
             
             🚀 **What's New:**
             - Latest updates from commit ${{ github.sha }}
