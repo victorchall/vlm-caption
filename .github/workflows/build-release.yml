@@ -139,7 +139,7 @@ jobs:
             - Latest updates from commit ${{ github.sha }}
           files: |
             vlm-caption-cli-v*.zip
-            VLM Caption Setup v*.exe
+            VLM_Caption_Setup_v*.exe
           draft: false
           prerelease: false
         env:
