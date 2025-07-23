@@ -1,5 +1,9 @@
 # Dev
 
+The application has three basics laters. A React UI (ui/src/app.js), a flask API (app.py), and a core functionality script (caption_openai.py).
+
+The UI and API layer are primarily interfaces to edit the caption.yaml file which stores the configuration.  The core functionality script reads this file and executes based on that configuration.
+
 ## Basic app layout
 
 You'll need to install a Mermaid preview extension in VS Code to view this. 
