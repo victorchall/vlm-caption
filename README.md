@@ -1,4 +1,7 @@
 # VLM Image Captioning Tool
+<p align="center">
+  <img src="doc/main_gui.png" alt="VLM-Caption Main GUI" width="600">
+</p>
 
 This app uses Vision Language Models (VLM) to generate detailed captions for images through multi-turn conversations, using a separately hosted VLM models via an "OpenAI-compatible" API (*including locally hosted models*).
 
@@ -35,7 +38,7 @@ Slightly old video, app overview with install: [VLM Caption, multi-turn, data-dr
 - **Bulk Processing**: Process entire directories of images
 - **Output**: Saves captions as .txt files alongside original images
 
-A GUI is a work-in-progress, but will not be much more than a simple wrapper to edit `caption.yaml`, thus low priority.
+The GUI is a simple wrapper to edit `caption.yaml` if you wish to just use CLI.
 
 ## Configuration
 
@@ -47,11 +50,12 @@ All settings are configured through `caption.yaml` when using the CLI version.  
 
 Most of this is covered in [API Service Setup](#API_Service_Setup) for local users. If you are using a paid API, see [API_KEY.MD](API_KEY.MD) for info on setting your API.
 
+### CLI 
+If you just want to use the CLI, the entire app is driven by `caption.yaml`. Edit then run the CLI by running `python caption_openai.py`.  
 ```yaml
 # API endpoint - can be local LLM server or cloud service
 base_url: "http://localhost:1234/v1"
 # base_url: "https://api.openai.com/v1"
-# base_url: "https://api.anthropic.com/v1"
 
 # API key handling
 api_key: ""  # Leave empty for local servers
@@ -62,10 +66,8 @@ model: "gemma-3-27b-it"
 # model: "gpt-4o-mini"
 # model: "claude-sonnet-4-20250514"
 
-# Token limit (adjust for local VRAM constraints, though the VLM servic context setting likely takes precedent)
 max_tokens: 16384
 ```
-`model` is a string that tells the service what model you want to use. It should be visible in LM Studio in your models list, or with ollama use `ollama list`, or check the documentation of whatever service you are using.  The GUI will give you a drop down of what your local LLM service has available (i.e. everything already downloaded and ready on your system).
 
 **System Prompt**: Base instructions for the VLM.  Think of this as a global instruction that you likely will not modify per project.
 ```yaml

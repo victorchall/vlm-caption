@@ -131,20 +131,20 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-      body: JSON.stringify({
-        config: {
-          base_url: config.base_url,
-          model: config.model,
-          api_key: config.api_key,
-          system_prompt: config.system_prompt,
-          prompts: config.prompts,
-          base_directory: config.base_directory,
-          recursive: config.recursive,
-          hint_sources: config.hint_sources,
-          global_metadata_file: config.global_metadata_file,
-          skip_if_txt_exists: config.skip_if_txt_exists
-        }
-      }),
+        body: JSON.stringify({
+          config: {
+            base_url: config.base_url,
+            model: config.model,
+            api_key: config.api_key,
+            system_prompt: config.system_prompt,
+            prompts: config.prompts,
+            base_directory: config.base_directory,
+            recursive: config.recursive,
+            hint_sources: config.hint_sources,
+            global_metadata_file: config.global_metadata_file,
+            skip_if_txt_exists: config.skip_if_txt_exists
+          }
+        }),
       });
 
       const data = await response.json();
