@@ -136,6 +136,7 @@ function App() {
             base_url: config.base_url,
             model: config.model,
             api_key: config.api_key,
+            system_prompt: config.system_prompt,
             prompts: config.prompts,
             base_directory: config.base_directory,
             recursive: config.recursive,
