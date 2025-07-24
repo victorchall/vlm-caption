@@ -7,6 +7,7 @@ const RunTab = ({ apiPort, configSuccess, isSaving, onSaveConfig }) => {
   const [streamingOutput, setStreamingOutput] = useState('');
   const [useStreaming, setUseStreaming] = useState(true);
   const outputRef = useRef(null);
+  const eventSourceRef = useRef(null);
 
   // Auto-scroll to bottom of output
   useEffect(() => {
@@ -107,10 +108,40 @@ const RunTab = ({ apiPort, configSuccess, isSaving, onSaveConfig }) => {
     window.currentEventSource = eventSource;
   };
 
+  const stopCaptioning = async () => {
+    if (!apiPort || !isRunning) return;
+
+    try {
+      const response = await fetch(`http://localhost:${apiPort}/api/stop`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // If streaming, close the event source
+        if (useStreaming && window.currentEventSource) {
+          window.currentEventSource.close();
+        }
+
+        setIsRunning(false);
+        setError('');
+        setOutput('Captioning was cancelled by user');
+      } else {
+        setError(data.error || 'Failed to cancel captioning');
+      }
+    } catch (err) {
+      setError('Failed to connect to the server');
+    }
+  };
+
   const handleRunCaptioning = async () => {
     // Save config before running
     await onSaveConfig();
-    
+
     if (useStreaming) {
       runCaptioningWithStreaming();
     } else {
@@ -133,13 +164,24 @@ const RunTab = ({ apiPort, configSuccess, isSaving, onSaveConfig }) => {
         </label>
       </div>
       
-      <button
-        onClick={handleRunCaptioning}
-        disabled={isRunning || isSaving}
-        className="run-button"
-      >
-        {isSaving ? 'Saving...' : (isRunning ? 'Running...' : 'Run Captioning')}
-      </button>
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <button
+          onClick={handleRunCaptioning}
+          disabled={isRunning || isSaving}
+          className="run-button"
+        >
+          {isSaving ? 'Saving...' : (isRunning ? 'Running...' : 'Run Captioning')}
+        </button>
+
+        {!isRunning && (
+          <button
+            onClick={stopCaptioning}
+            className="stop-button"
+          >
+            Stop Captioning
+          </button>
+        )}
+      </div>
 
       {configSuccess && (
         <div className="success">

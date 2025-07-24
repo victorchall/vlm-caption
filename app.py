@@ -16,43 +16,85 @@ CORS(app)
 
 captioning_in_progress = False
 output_queue = queue.Queue()
+current_task = None
+task_lock = asyncio.Lock()
 
 @app.route('/api/run', methods=['POST'])
 def run_captioning():
-    global captioning_in_progress
-    
+    global captioning_in_progress, current_task
+
     if captioning_in_progress:
         return jsonify({'error': 'Captioning is already in progress'}), 400
-    
+
     try:
         captioning_in_progress = True
-        
+
         old_stdout = sys.stdout
         sys.stdout = captured_output = io.StringIO()
-        
+
+        # Create a new event loop and run the task
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(caption_main())
-        loop.close()
-        
+
+        # Store the current task for potential cancellation
+        current_task = loop.create_task(run_captioning_task())
+
+        # Run until the task completes or is cancelled
+        try:
+            loop.run_until_complete(current_task)
+        except asyncio.CancelledError:
+            return jsonify({
+                'success': False,
+                'message': 'Captioning was cancelled by user'
+            }), 200
+
         output = captured_output.getvalue()
         sys.stdout = old_stdout
-        
+
         return jsonify({
             'success': True,
             'message': 'Captioning completed successfully',
             'output': output
         })
-    
+
     except Exception as e:
         sys.stdout = old_stdout
         return jsonify({
             'success': False,
             'error': str(e)
         }), 500
-    
+
     finally:
         captioning_in_progress = False
+        loop.close()
+
+async def run_captioning_task():
+    """Wrapper function for caption_main that handles cancellation"""
+    try:
+        await caption_main()
+    except asyncio.CancelledError:
+        print("Captioning task was cancelled")
+        raise
+
+@app.route('/api/stop', methods=['POST'])
+def stop_captioning():
+    global current_task
+
+    if current_task is None or current_task.done():
+        return jsonify({'error': 'No captioning process is currently running'}), 400
+
+    try:
+        # Cancel the task
+        current_task.cancel()
+        return jsonify({
+            'success': True,
+            'message': 'Captioning cancellation requested'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Failed to cancel captioning: {str(e)}'
+        }), 500
 
 @app.route('/api/status', methods=['GET'])
 def get_status():
@@ -178,28 +220,36 @@ class StreamingStdout:
         self.original_stdout.flush()
 
 def run_captioning_with_streaming():
-    global captioning_in_progress, output_queue
-    
+    global captioning_in_progress, output_queue, current_task
+
     try:
         captioning_in_progress = True
-        
+
         # Clear any existing items in the queue
         while not output_queue.empty():
             try:
                 output_queue.get_nowait()
             except queue.Empty:
                 break
-        
+
         original_stdout = sys.stdout
         sys.stdout = StreamingStdout(original_stdout, output_queue)
-        
+
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(caption_main())
-        loop.close()
-        
+
+        # Store the current task for potential cancellation
+        current_task = loop.create_task(run_captioning_task())
+
+        # Run until the task completes or is cancelled
+        try:
+            loop.run_until_complete(current_task)
+        except asyncio.CancelledError:
+            output_queue.put("data: [CANCELLED] Captioning was cancelled by user\n\n")
+
         output_queue.put("data: [COMPLETE]\n\n")
-        
+        loop.close()
+
     except Exception as e:
         output_queue.put(f"data: [ERROR] {str(e)}\n\n")
     finally:

@@ -136,19 +136,27 @@ async def main():
     aggregated_completion_token_usage = 0
 
     async for image_path in image_walk(conf.base_directory, recursive=conf.recursive, skip_if_txt_exists=conf.skip_if_txt_exists):
+        current_task = asyncio.current_task()
+        if current_task is not None and current_task.cancelled():
+            print("Captioning task was cancelled by user")
+            return
+
         print(f"\nProcessing {image_path}")
         try:
             caption_text, chat_history, prompt_token_usage, completion_token_usage = await process_image(client, image_path, conf)
         except openai.APIConnectionError as e:
             print(f"{e}\nAPI Error. Check that your service is running and caption.yaml has the correct base_url")
-        
+        except asyncio.CancelledError:
+            print("Captioning task was cancelled during image processing")
+            raise
+
         # aggregated_prompt_token_usage += prompt_token_usage
         # aggregated_completion_token_usage += aggregated_completion_token_usage
 
         print(f" --> Final caption:\n{caption_text}")
         print(f" --> prompt_token_usage: {prompt_token_usage}, completion_token_usage: {completion_token_usage}")
         await save_caption(file_path=image_path, caption_text=caption_text, debug_info=chat_history)
-    
+
     print(F" -> JOB COMPLETE.")
     # not working?
     print(f"aggregated_prompt_token_usage: {aggregated_prompt_token_usage}, aggregated_completion_token_usage: {aggregated_completion_token_usage}")
