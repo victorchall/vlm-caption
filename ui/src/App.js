@@ -239,8 +239,6 @@ return (
       <UpdateNotification />
       <header className="App-header">
         <h1>VLM Caption</h1>
-        
-        {/* Tab Navigation */}
         <div className="tab-navigation">
           <button 
             className={`tab-button ${activeTab === 'config' ? 'active' : ''}`}
@@ -254,10 +252,8 @@ return (
           >
             Run
           </button>
-
         </div>
 
-        {/* Run Tab */}
         {activeTab === 'run' && (
           <RunTab
             apiPort={apiPort}
@@ -267,7 +263,6 @@ return (
           />
         )}
 
-        {/* Configuration Tab */}
         {activeTab === 'config' && (
           <ConfigForm
             config={config}
