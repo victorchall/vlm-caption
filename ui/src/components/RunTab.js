@@ -7,7 +7,6 @@ const RunTab = ({ apiPort, configSuccess, isSaving, onSaveConfig }) => {
   const [streamingOutput, setStreamingOutput] = useState('');
   const [useStreaming, setUseStreaming] = useState(true);
   const outputRef = useRef(null);
-  const eventSourceRef = useRef(null);
 
   // Auto-scroll to bottom of output
   useEffect(() => {
