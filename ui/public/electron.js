@@ -1,10 +1,82 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const isDev = require('electron-is-dev');
 const waitOn = require('wait-on');
 const portfinder = require('portfinder');
+const { autoUpdater } = require('electron-updater');
+
+// Configure autoUpdater
+autoUpdater.autoDownload = false; // We'll download manually when user chooses to update
+autoUpdater.autoInstallOnAppQuit = true; // Install automatically on quit
+
+// Auto-update event handlers
+autoUpdater.on('error', (error) => {
+  log(`Auto-update error: ${error.message}`, 'ERROR');
+  if (mainWindow) {
+    mainWindow.webContents.send('update-error', error.message);
+  }
+});
+
+autoUpdater.on('checking-for-update', () => {
+  log('Checking for update...');
+  if (mainWindow) {
+    mainWindow.webContents.send('checking-for-update');
+  }
+});
+
+autoUpdater.on('update-available', (info) => {
+  log(`Update available: ${JSON.stringify(info)}`);
+  if (mainWindow) {
+    mainWindow.webContents.send('update-available', info);
+  }
+});
+
+autoUpdater.on('update-not-available', (info) => {
+  log(`Update not available: ${JSON.stringify(info)}`);
+  if (mainWindow) {
+    mainWindow.webContents.send('update-not-available', info);
+  }
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  log(`Download progress: ${JSON.stringify(progressObj)}`);
+  if (mainWindow) {
+    mainWindow.webContents.send('download-progress', progressObj);
+  }
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  log(`Update downloaded: ${JSON.stringify(info)}`);
+  if (mainWindow) {
+    mainWindow.webContents.send('update-downloaded', info);
+  }
+});
+
+// IPC handlers for update control
+ipcMain.on('check-for-updates', () => {
+  if (!isDev) {
+    log('Manual check for updates initiated');
+    autoUpdater.checkForUpdates();
+  } else {
+    log('Skipping update check in development mode');
+  }
+});
+
+ipcMain.on('download-update', () => {
+  if (!isDev) {
+    log('Download update initiated');
+    autoUpdater.downloadUpdate();
+  } else {
+    log('Skipping update download in development mode');
+  }
+});
+
+ipcMain.on('quit-and-install', () => {
+  log('Quit and install update');
+  setImmediate(() => autoUpdater.quitAndInstall());
+});
 
 let mainWindow;
 let backendProcess;
@@ -223,6 +295,12 @@ app.whenReady().then(async () => {
     mainWindow.webContents.on('did-finish-load', () => {
       log(`Sending API port to renderer: ${apiPort}`);
       mainWindow.webContents.send('set-api-port', apiPort);
+      
+      // Check for updates after the window is loaded (but not in dev mode)
+      if (!isDev) {
+        log('Checking for updates on startup');
+        autoUpdater.checkForUpdates();
+      }
     });
     
     log('Window created successfully');

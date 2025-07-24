@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import ConfigForm from './components/ConfigForm';
 import RunTab from './components/RunTab';
+import UpdateNotification from './components/UpdateNotification';
 
 function App() {
   const [apiPort, setApiPort] = useState(null);
@@ -233,8 +234,9 @@ function App() {
     }
   };
 
-  return (
+return (
     <div className="App">
+      <UpdateNotification />
       <header className="App-header">
         <h1>VLM Caption</h1>
         
