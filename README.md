@@ -204,4 +204,4 @@ Congrats! You're running your own offline LLM/VLM server.
 
 ## Dev
 
-See [DEV.md](DEV.md) 
+See [DEV.md](DEV.md)
