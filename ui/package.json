@@ -65,7 +65,7 @@
     "extraMetadata": {
       "name": "vlm-caption"
     },
-    "compression": "store",
+    "compression": "normal",
     "npmRebuild": false,
     "buildDependenciesFromSource": false,
     "publish": {
