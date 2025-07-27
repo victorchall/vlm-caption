@@ -146,8 +146,8 @@ jobs:
             $changelog = "- No new changes since last release"
           }
           
-          # Escape newlines for GitHub Actions output
-          $changelog = $changelog -replace "`r`n", "%0A" -replace "`n", "%0A"
+          # Trim trailing whitespace/newlines and escape newlines for GitHub Actions output
+          $changelog = $changelog.Trim() -replace "`r`n", "%0A" -replace "`n", "%0A"
           echo "CHANGELOG=$changelog" >> $env:GITHUB_OUTPUT
 
       - name: Create Release
