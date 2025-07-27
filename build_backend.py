@@ -34,7 +34,7 @@ def build_backend():
         shutil.rmtree(dist_dir)
     
     # PyInstaller command (using absolute paths for data files)
-    caption_yaml = project_root / 'caption.yaml'
+    init_yaml = project_root / 'init.yaml'
     character_info = project_root / 'character_info.txt'
     app_py = project_root / 'app.py'
     
@@ -42,7 +42,7 @@ def build_backend():
         'pyinstaller',
         '--onefile',
         '--name=app',
-        f'--add-data={caption_yaml};.',
+        f'--add-data={init_yaml};.',
         f'--add-data={character_info};.',
         '--hidden-import=asyncio',
         '--hidden-import=flask',
@@ -73,7 +73,7 @@ def build_backend():
             print("Warning: app.exe not found in dist/ directory")
         
         # Copy necessary files to the backend directory (using absolute paths)
-        files_to_copy = [caption_yaml, character_info]
+        files_to_copy = [init_yaml, character_info]
         for file_path in files_to_copy:
             if file_path.exists():
                 shutil.copy2(file_path, backend_dir / file_path.name)

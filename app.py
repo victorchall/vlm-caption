@@ -10,6 +10,7 @@ import os
 import queue
 from caption_openai import main as caption_main
 from hints.registration import get_available_hint_sources, get_hint_source_descriptions
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -136,10 +137,17 @@ def get_hint_sources():
 def get_config():
     try:
         config_path = 'caption.yaml'
+        init_config_path = 'init.yaml'
         
-        # Check if config file exists
+        # Check if config file exists, if not create it from init.yaml
         if not os.path.exists(config_path):
-            return jsonify({'error': 'Configuration file not found'}), 404
+            if os.path.exists(init_config_path):
+                # Copy init.yaml to caption.yaml
+                import shutil
+                shutil.copy2(init_config_path, config_path)
+                print(f"Created {config_path} from {init_config_path}")
+            else:
+                return jsonify({'error': 'Neither configuration file nor initialization template found'}), 404
         
         # Load YAML configuration
         with open(config_path, 'r', encoding='utf-8') as f:
@@ -170,6 +178,7 @@ def update_config():
             return jsonify({'error': 'No config object provided'}), 400
         
         config_path = 'caption.yaml'
+        init_config_path = 'init.yaml'
         
         current_config = {}
         if os.path.exists(config_path):
@@ -179,6 +188,13 @@ def update_config():
             backup_path = f"{config_path}.backup"
             with open(config_path, 'r', encoding='utf-8') as src, open(backup_path, 'w', encoding='utf-8') as dst:
                 dst.write(src.read())
+        elif os.path.exists(init_config_path):
+            # If caption.yaml doesn't exist but init.yaml does, create it first
+            import shutil
+            shutil.copy2(init_config_path, config_path)
+            print(f"Created {config_path} from {init_config_path}")
+            with open(config_path, 'r', encoding='utf-8') as f:
+                current_config = yaml.safe_load(f) or {}
         
         merged_config = current_config.copy()
         merged_config.update(new_config)
@@ -219,13 +235,21 @@ class StreamingStdout:
     def flush(self):
         self.original_stdout.flush()
 
+def save_config_with_timestamp():
+    # saves the config when a "run caption" is executed for later review
+    current_time = time.localtime()
+    formatted_time = time.strftime("%Y-%m-%d-%H-%M", current_time)
+    config_path = "caption.yaml"
+    backup_path = f"caption_{formatted_time}.yaml"
+    with open(config_path, 'r', encoding='utf-8') as src, open(backup_path, 'w', encoding='utf-8') as dst:
+        dst.write(src.read())
+    
 def run_captioning_with_streaming():
     global captioning_in_progress, output_queue, current_task
 
     try:
         captioning_in_progress = True
 
-        # Clear any existing items in the queue
         while not output_queue.empty():
             try:
                 output_queue.get_nowait()
@@ -241,7 +265,6 @@ def run_captioning_with_streaming():
         # Store the current task for potential cancellation
         current_task = loop.create_task(run_captioning_task())
 
-        # Run until the task completes or is cancelled
         try:
             loop.run_until_complete(current_task)
         except asyncio.CancelledError:
