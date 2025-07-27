@@ -1,152 +1,26 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect } from 'react';
 
-const RunTab = ({ apiPort, configSuccess, isSaving, onSaveConfig }) => {
-  const [isRunning, setIsRunning] = useState(false);
-  const [output, setOutput] = useState('');
-  const [error, setError] = useState('');
-  const [streamingOutput, setStreamingOutput] = useState('');
-  const [useStreaming, setUseStreaming] = useState(true);
-  const outputRef = useRef(null);
-
+const RunTab = ({ 
+  apiPort, 
+  configSuccess, 
+  isSaving, 
+  onSaveConfig,
+  isRunning,
+  output,
+  error,
+  streamingOutput,
+  useStreaming,
+  setUseStreaming,
+  outputRef,
+  onRunCaptioning,
+  onStopCaptioning
+}) => {
   // Auto-scroll to bottom of output
   useEffect(() => {
     if (outputRef.current) {
       outputRef.current.scrollTop = outputRef.current.scrollHeight;
     }
-  }, [streamingOutput]);
-
-  const runCaptioning = async () => {
-    if (!apiPort) return;
-    setIsRunning(true);
-    setOutput('');
-    setError('');
-
-    try {
-      const response = await fetch(`http://localhost:${apiPort}/api/run`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setOutput(data.output);
-      } else {
-        setError(data.error || 'An error occurred');
-      }
-    } catch (err) {
-      setError('Failed to connect to the server');
-    } finally {
-      setIsRunning(false);
-    }
-  };
-
-  const runCaptioningWithStreaming = () => {
-    if (!apiPort) return;
-    setIsRunning(true);
-    setStreamingOutput('');
-    setOutput('');
-    setError('');
-
-    // Helper function to truncate output if it exceeds 10k characters
-    const truncateOutput = (currentOutput, newData) => {
-      const combined = currentOutput + newData;
-      const MAX_CHARS = 10000;
-      const TRUNCATE_TO = 8000; // Keep 8k chars after truncation for buffer
-      
-      if (combined.length <= MAX_CHARS) {
-        return combined;
-      }
-      
-      // Find a good place to truncate (preferably at a line break)
-      const truncatePoint = combined.length - TRUNCATE_TO;
-      const truncateStart = combined.indexOf('\n', truncatePoint);
-      const actualTruncatePoint = truncateStart !== -1 ? truncateStart + 1 : truncatePoint;
-      
-      const truncated = combined.substring(actualTruncatePoint);
-      return '...[output truncated]...\n' + truncated;
-    };
-
-    // Create EventSource for Server-Sent Events
-    const eventSource = new EventSource(`http://localhost:${apiPort}/api/run-stream`, {
-      withCredentials: false
-    });
-
-    eventSource.onmessage = (event) => {
-      const data = event.data;
-      
-      // Handle special control messages
-      if (data.startsWith('[STARTED]')) {
-        setStreamingOutput(prev => truncateOutput(prev, data.substring(9) + '\n'));
-      } else if (data.startsWith('[COMPLETE]')) {
-        setStreamingOutput(prev => truncateOutput(prev, '\n🎉 Captioning completed successfully!\n'));
-        setIsRunning(false);
-        eventSource.close();
-      } else if (data.startsWith('[ERROR]')) {
-        setError(data.substring(7));
-        setIsRunning(false);
-        eventSource.close();
-      } else if (data === '[KEEPALIVE]') {
-        // Ignore keepalive messages
-      } else {
-        // Regular output
-        setStreamingOutput(prev => truncateOutput(prev, data + '\n'));
-      }
-    };
-
-    eventSource.onerror = (error) => {
-      console.error('EventSource error:', error);
-      setError('Connection to server lost');
-      setIsRunning(false);
-      eventSource.close();
-    };
-
-    // Store reference to close if needed
-    window.currentEventSource = eventSource;
-  };
-
-  const stopCaptioning = async () => {
-    if (!apiPort || !isRunning) return;
-
-    try {
-      const response = await fetch(`http://localhost:${apiPort}/api/stop`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // If streaming, close the event source
-        if (useStreaming && window.currentEventSource) {
-          window.currentEventSource.close();
-        }
-
-        setIsRunning(false);
-        setError('');
-        setOutput('Captioning was cancelled by user');
-      } else {
-        setError(data.error || 'Failed to cancel captioning');
-      }
-    } catch (err) {
-      setError('Failed to connect to the server');
-    }
-  };
-
-  const handleRunCaptioning = async () => {
-    // Save config before running
-    await onSaveConfig();
-
-    if (useStreaming) {
-      runCaptioningWithStreaming();
-    } else {
-      runCaptioning();
-    }
-  };
+  }, [streamingOutput, outputRef]);
 
   return (
     <div className="tab-content">
@@ -165,16 +39,16 @@ const RunTab = ({ apiPort, configSuccess, isSaving, onSaveConfig }) => {
       
       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
         <button
-          onClick={handleRunCaptioning}
+          onClick={onRunCaptioning}
           disabled={isRunning || isSaving}
           className="run-button"
         >
           {isSaving ? 'Saving...' : (isRunning ? 'Running...' : 'Run Captioning')}
         </button>
 
-        {!isRunning && (
+        {isRunning && (
           <button
-            onClick={stopCaptioning}
+            onClick={onStopCaptioning}
             className="stop-button"
           >
             Stop Captioning
