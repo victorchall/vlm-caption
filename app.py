@@ -8,6 +8,8 @@ import argparse
 import yaml
 import os
 import queue
+from pathlib import Path
+import shutil
 from caption_openai import main as caption_main
 from hints.registration import get_available_hint_sources, get_hint_source_descriptions
 import time
@@ -19,6 +21,41 @@ captioning_in_progress = False
 output_queue = queue.Queue()
 current_task = None
 task_lock = asyncio.Lock()
+
+def get_user_config_dir():
+    """Get the user configuration directory path (cross-platform)"""
+    home = Path.home()
+    config_dir = home / '.vlm-caption'
+    config_dir.mkdir(exist_ok=True)
+    return config_dir
+
+def get_user_config_backup_path():
+    """Get the path to the user's config backup file"""
+    return get_user_config_dir() / 'caption.yaml'
+
+def backup_config_to_user_dir(config_path):
+    """Backup the config file to the user directory"""
+    try:
+        if os.path.exists(config_path):
+            backup_path = get_user_config_backup_path()
+            shutil.copy2(config_path, backup_path)
+            print(f"Backed up config to {backup_path}")
+            return True
+    except Exception as e:
+        print(f"Failed to backup config: {e}")
+        return False
+
+def restore_config_from_user_dir(config_path):
+    """Restore config from user directory backup if it exists"""
+    try:
+        backup_path = get_user_config_backup_path()
+        if backup_path.exists():
+            shutil.copy2(backup_path, config_path)
+            print(f"Restored config from {backup_path}")
+            return True
+    except Exception as e:
+        print(f"Failed to restore config from backup: {e}")
+        return False
 
 @app.route('/api/run', methods=['POST'])
 def run_captioning():
@@ -139,13 +176,17 @@ def get_config():
         config_path = 'caption.yaml'
         init_config_path = 'init.yaml'
         
-        # Check if config file exists, if not create it from init.yaml
+        # Check if config file exists in local directory
         if not os.path.exists(config_path):
-            if os.path.exists(init_config_path):
-                # Copy init.yaml to caption.yaml
-                import shutil
+            # Try to restore from user backup directory first
+            if restore_config_from_user_dir(config_path):
+                print("Restored configuration from user backup")
+            elif os.path.exists(init_config_path):
+                # No backup found, create from init.yaml
                 shutil.copy2(init_config_path, config_path)
                 print(f"Created {config_path} from {init_config_path}")
+                # Also backup this initial config to user directory
+                backup_config_to_user_dir(config_path)
             else:
                 return jsonify({'error': 'Neither configuration file nor initialization template found'}), 404
         
@@ -190,7 +231,6 @@ def update_config():
                 dst.write(src.read())
         elif os.path.exists(init_config_path):
             # If caption.yaml doesn't exist but init.yaml does, create it first
-            import shutil
             shutil.copy2(init_config_path, config_path)
             print(f"Created {config_path} from {init_config_path}")
             with open(config_path, 'r', encoding='utf-8') as f:
@@ -202,10 +242,21 @@ def update_config():
         with open(config_path, 'w', encoding='utf-8') as f:
             yaml.dump(merged_config, f, default_flow_style=False, sort_keys=False)
         
+        # Backup the updated config to user directory for persistence across reinstalls
+        backup_success = backup_config_to_user_dir(config_path)
+        
         actual_saved_path = os.path.abspath(config_path)
+        user_backup_path = get_user_config_backup_path()
+        
+        message = f'Configuration saved to {actual_saved_path}'
+        if backup_success:
+            message += f' and backed up to {user_backup_path}'
+        else:
+            message += ' (warning: backup to user directory failed)'
+        
         return jsonify({
             'success': True,
-            'message': f'Configuration saved to {actual_saved_path}'
+            'message': message
         })
     
     except Exception as e:
