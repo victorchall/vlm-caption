@@ -11,9 +11,23 @@ A common use case would be to automate captioning large numbers of images for la
 
 Slightly old video, app overview with install: [VLM Caption, multi-turn, data-driven image captioning](https://www.youtube.com/watch?v=WZ6zK7Tc0zs)
 
-## Install
+## Table of Contents
 
-- See [API Service Setup](#API_Service_Setup) to install a VLM/LLM server of your choice.  LM Studio is extremely easy to install and use to manage models.  Your API service will actually host your VLM/LLM models, and any model you can load can be used, but `Vision` support is required. Many hundreds, if not thousands of models are available.
+[API Service Setup](#API_Service_Setup) (for local LLM users)
+
+[API Key use](API_KEY.MD) (for cloud API users)
+
+[Install VLM Caption](Install)
+
+[Features](Features)
+
+[Hint Sources](Hint_Sources)
+
+[Tips](Tips)
+
+[Dev/Contribution](DEV.md)
+
+## Install
 
 - Visit https://github.com/victorchall/vlm-caption/releases click on `Assets` to expand the the download links.  You have two options to use the application.
 
@@ -48,7 +62,7 @@ All settings are configured through `caption.yaml` when using the CLI version.  
 
 ### API Configuration
 
-Most of this is covered in [API Service Setup](#API_Service_Setup) for local users. If you are using a paid API, see [API_KEY.MD](API_KEY.MD) for info on setting your API.
+Most of this is covered in [API Service Setup](API_Service_Setup) for local users.
 
 ### CLI 
 If you just want to use the CLI, the entire app is driven by `caption.yaml`. Edit then run the CLI by running `python caption_openai.py`.  
@@ -81,7 +95,7 @@ global_metadata_file: "character_info.txt"
 
 This is a great way to add a large text file with descriptions of all the locations, characters, and objects that might appear in any of the images to help the VLM identify things by their proper names instead of generic pronouns.
 
-If you don't have this information, set it to empty quotes `""` like this:
+If you don't have this information, set it to empty quotes `""` like this or leave it empty on the GUI:
 
 ```yaml
 global_metadata_file: ""
@@ -101,19 +115,19 @@ prompts:
   - "Summarize the description in four sentences. No markdown or special formatting."
 ```
 
-### Tips:
+### Tips
 
 - The **final prompt's response** becomes the saved caption. I strongly recommend asking for a summary similar to the above example. 
 
 - The more prompts you include the more VRAM and context will be required. 
 
-- max_tokens may also be limited to the context length setting in your service. Check your service documentation for configuration.
+- Check your service documentation for configuration to make sure the context window is sufficient.
 
 - The above example is very strong when used with a more powerful VLM (like Gemma3 27B) and a large global metadata file with detailed descriptions.
 
 - Experiment with small amounts of data to tweak your prompts.
 
-## Hint Sources
+### Hint Sources
 
 Enable additional context sources that get prepended to the first prompt. 
 
@@ -124,11 +138,11 @@ hint_sources:
   - metadata # tries to read a metadata.json in the same folder as each image
 ```
 
-You can add `#` to the beginning of the line to comment out ones you don't want. If a source isn't available for a given image, it is skipped.  For instances if you use `json` above and an image named `cloud_strife.jpeg` has no `cloud_strife.json` in the same directory, the hint is skipped.
+If a source isn't available for a given image, it is skipped.  For instances if you use `json` above and an image named `cloud_strife.jpeg` has no `cloud_strife.json` in the same directory, the hint is skipped.
 
 See [HINTSOURCES.md](HINTSOURCES.md) for details on available hint sources and how they work. 
 
-Developers can also add their own. PRs for generally useful hint_sources are welcome.
+[Developers](DEV.md) can also add their own custom hint sources.
 
 ### Directory Processing
 
@@ -138,38 +152,6 @@ base_directory: "C:/path/to/images"  # Root directory to process
 recursive: false  # Enable recursive subdirectory processing
 ```
 Mostly self explanatory.  Paste in the path to the directory you want processed and set the recursive to `true` to walk all subdirectories.
-
-
-## API Service Setup
-
-You can use a paid API like OpenAI, Anthropic, or Google Gemini by configuring your [api_key](API_KEY.MD), however for local hosting, you'll need a service to host your VLM model.
-
-1. Install one of the following: [LM Studio](https://lmstudio.ai/download), [vllm](https://github.com/vllm-project/vllm), [ollama](https://ollama.com/download), or any other local LLM service that serves via the "OpenAI API" (most of them do). 
-    
-    LM Studio is likely the easiest for most people to get working since it is entirely GUI based. I've only included extra steps below for LM Studio. If you want to use ollama, vllm, or another service, please refer to that application's documentation for installation. 
-
-2. Download your preferred model inside the service you installed. You should select a model and quant that is a few gigabytes less than your VRAM to leave room for context.
-    
-    a. For LM Studio, open the app and go to Discover, search for models and download one. 
-
-3. Make sure local hosting is enabled:
-   
-    a. For LM Studio, enable developer mode (bottom left  `User - Power User - Developer`, click on `Developer`), then go to the `Developer` section, at the top left click the toggle to enable the service. Make sure to copy the uri shown at the top right (see point 5 below).
-    
-    ![Toggle Service in LM Studio](doc/lm_studio_dev.png)
-
-    If you are using the standalone GUI, you will also need to `Enable CORS` to allow app to call the LM Studio service API.
-    ![Enable CORS in LM Studio](doc/enable_cors.png)
-
-
-4. Make sure the service works.  You can typically check the /v1/models route in any web browser to make sure the service is running and models are available to serve. (ex. something like `http://192.168.0.5:11434/v1/models` or `http://localhost:1234/v1/models` -- just open in Chrome)
-
-5.  Paste the IP and port and paste into `caption.yaml` in the `base_url` value, and add `/v1`.  You may also see `localhost` in place of the IP if you are not configured to host to the rest of your local network.
-    ![alt text](doc/base_url.png)
-
-Congrats! You're running your own offline LLM/VLM server. 
-
-*Check the documentation for the server/app you are using if you need more information or support on configuring your service. Further info for LM Studio is [here](https://lmstudio.ai/docs/app/api)*
 
 ## Tips
 
@@ -189,9 +171,9 @@ Congrats! You're running your own offline LLM/VLM server.
 
     Not all models are suitable for multi-turn conversation. Try different models, or you can try a single prompt.
 
-    Test the model directly in the Chat window in LM Studio to see how it responds and to workshop your series of prompts.  Or try running the app on a directory with just a few images, then check the .txt outputs. 
+    Test the model directly in the Chat window in LM Studio to see how it responds and to workshop your series of prompts.  Or try running VLM Caption on a directory with just a few images, then check the .txt outputs. 
 
-- **Cuda OOM or Failures**: You may need to reduce the number of prompts in your chain if you run out of VRAM, or select a smaller quantization of the model (Q3_K_S, etc), or select a smaller model. You may also need to configure your service to increase the context size as the default is often 4096, which you could exceed with very long chains of prompts, leading to unintended outputs depending on how the service truncates. Check your service logs to spot errors. Refer to the documentation of the service to change the configuration.
+- **Cuda OOM or Failures**: You may need to reduce the number of prompts in your chain if you run out of VRAM, or select a smaller quantization of the model (Q3_K_S, etc), or select a smaller model. You may also need to configure your service to increase the context size as the default is often 4096, which you could exceed with very long chains of prompts, a very large metadata sources, leading to unintended outputs depending on how your service truncates context. Refer to the documentation of your service for more information.
 
 ## Advanced tip
 
