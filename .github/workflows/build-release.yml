@@ -123,6 +123,33 @@ jobs:
         id: version
         run: echo "VERSION_TAG=$(cat version.txt)" >> $env:GITHUB_OUTPUT
 
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          # Get the latest release tag (excluding the current one we're about to create)
+          $previousTag = git tag --sort=-version:refname | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' } | Select-Object -First 1
+          
+          if ($previousTag) {
+            Write-Output "Previous tag found: $previousTag"
+            # Get commit messages since the previous tag, format them nicely
+            $commits = git log --pretty=format:"- %s" "$previousTag..HEAD"
+          } else {
+            Write-Output "No previous tag found, getting all commits"
+            # If no previous tag exists, get all commits
+            $commits = git log --pretty=format:"- %s"
+          }
+          
+          # Filter out merge commits and format the changelog
+          $changelog = $commits | Where-Object { $_ -notmatch "^- Merge " } | Out-String
+          
+          if (-not $changelog.Trim()) {
+            $changelog = "- No new changes since last release"
+          }
+          
+          # Escape newlines for GitHub Actions output
+          $changelog = $changelog -replace "`r`n", "%0A" -replace "`n", "%0A"
+          echo "CHANGELOG=$changelog" >> $env:GITHUB_OUTPUT
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -136,7 +163,7 @@ jobs:
             - `VLM_Caption_Setup_v${{ steps.version.outputs.VERSION_TAG }}.${{ github.run_number }}.exe` - GUI version (Windows installer)
             
             🚀 **What's New:**
-            - Latest updates from commit ${{ github.sha }}
+            ${{ steps.changelog.outputs.CHANGELOG }}
           files: |
             vlm-caption-cli-v*.zip
             VLM_Caption_Setup_v*.exe
