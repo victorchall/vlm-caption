@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import ConfigForm from './components/ConfigForm';
 import RunTab from './components/RunTab';
@@ -29,7 +29,14 @@ function App() {
   const [hintSources, setHintSources] = useState({});
   const [hintSourcesLoading, setHintSourcesLoading] = useState(false);
   const [hintSourcesError, setHintSourcesError] = useState('');
-  // Fetch models from base_url
+  
+  const [isRunning, setIsRunning] = useState(false);
+  const [output, setOutput] = useState('');
+  const [error, setError] = useState('');
+  const [streamingOutput, setStreamingOutput] = useState('');
+  const [useStreaming, setUseStreaming] = useState(true);
+  const outputRef = useRef(null);
+
   const fetchModels = async (baseUrl) => {
     if (!baseUrl) {
       setModels([]);
@@ -40,13 +47,11 @@ function App() {
     setModelsError('');
     
     try {
-      // Ensure the URL has a scheme
       let url = baseUrl;
       if (!/^https?:\/\//i.test(url)) {
         url = 'http://' + url;
       }
       
-      // Construct the models URL
       const modelsUrl = new URL('v1/models', url).toString();
       
       const response = await fetch(modelsUrl, {
@@ -75,7 +80,6 @@ function App() {
     }
   };
 
-  // Load configuration from backend
   const loadConfig = async () => {
     if (!apiPort) return;
     setConfigLoading(true);
@@ -118,7 +122,6 @@ function App() {
     }
   };
 
-  // Save configuration to backend
   const saveConfig = async () => {
     if (!apiPort) return;
     setIsSaving(true);
@@ -164,7 +167,6 @@ function App() {
     }
   };
 
-  // Handle input changes
   const handleConfigChange = (field, value) => {
     setConfig(prev => {
       const newConfig = { ...prev, [field]: value };
@@ -204,7 +206,6 @@ function App() {
       loadConfig();
       fetchHintSources();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiPort]);
 
   const fetchHintSources = async () => {
@@ -231,6 +232,140 @@ function App() {
       setHintSourcesError('Failed to connect to the server');
     } finally {
       setHintSourcesLoading(false);
+    }
+  };
+
+  const runCaptioning = async () => {
+    if (!apiPort) return;
+    setIsRunning(true);
+    setOutput('');
+    setError('');
+
+    try {
+      const response = await fetch(`http://localhost:${apiPort}/api/run`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setOutput(data.output);
+      } else {
+        setError(data.error || 'An error occurred');
+      }
+    } catch (err) {
+      setError('Failed to connect to the server');
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const runCaptioningWithStreaming = () => {
+    if (!apiPort) return;
+    setIsRunning(true);
+    setStreamingOutput('');
+    setOutput('');
+    setError('');
+
+    const truncateOutput = (currentOutput, newData) => {
+      const combined = currentOutput + newData;
+      const MAX_CHARS = 10000;
+      const TRUNCATE_TO = 8000;
+      
+      if (combined.length <= MAX_CHARS) {
+        return combined;
+      }
+      
+      // Find a good place to truncate (preferably at a line break)
+      const truncatePoint = combined.length - TRUNCATE_TO;
+      const truncateStart = combined.indexOf('\n', truncatePoint);
+      const actualTruncatePoint = truncateStart !== -1 ? truncateStart + 1 : truncatePoint;
+      
+      const truncated = combined.substring(actualTruncatePoint);
+      return '...[output truncated]...\n' + truncated;
+    };
+
+    const eventSource = new EventSource(`http://localhost:${apiPort}/api/run-stream`, {
+      withCredentials: false
+    });
+
+    eventSource.onmessage = (event) => {
+      const data = event.data;
+      
+      if (data.startsWith('[STARTED]')) {
+        setStreamingOutput(prev => truncateOutput(prev, data.substring(9) + '\n'));
+      } else if (data.startsWith('[COMPLETE]')) {
+        setStreamingOutput(prev => truncateOutput(prev, '\n🎉 Captioning completed successfully!\n'));
+        setIsRunning(false);
+        eventSource.close();
+      } else if (data.startsWith('[ERROR]')) {
+        setError(data.substring(7));
+        setIsRunning(false);
+        eventSource.close();
+      } else if (data === '[KEEPALIVE]') {
+        // Ignore keepalive messages
+      } else {
+        setStreamingOutput(prev => truncateOutput(prev, data + '\n'));
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('EventSource error:', error);
+      setError('Connection to server lost');
+      setIsRunning(false);
+      eventSource.close();
+    };
+
+    // Store reference to close if needed
+    window.currentEventSource = eventSource;
+  };
+
+  const stopCaptioning = async () => {
+    if (!apiPort || !isRunning) return;
+
+    try {
+      const response = await fetch(`http://localhost:${apiPort}/api/stop`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        if (useStreaming && window.currentEventSource) {
+          window.currentEventSource.close();
+        }
+
+        setIsRunning(false);
+        setError('');
+        
+        // Append cancellation message to streaming output if streaming, otherwise set regular output
+        if (useStreaming && streamingOutput) {
+          setStreamingOutput(prev => prev + '\n🛑 Captioning was cancelled by user\n');
+        } else {
+          setOutput('Captioning was cancelled by user');
+        }
+      } else {
+        setError(data.error || 'Failed to cancel captioning');
+      }
+    } catch (err) {
+      setError('Failed to connect to the server');
+    }
+  };
+
+  const handleRunCaptioning = async () => {
+    // Save config before running
+    await saveConfig();
+
+    if (useStreaming) {
+      runCaptioningWithStreaming();
+    } else {
+      runCaptioning();
     }
   };
 
@@ -264,6 +399,15 @@ return (
             configSuccess={configSuccess}
             isSaving={isSaving}
             onSaveConfig={saveConfig}
+            isRunning={isRunning}
+            output={output}
+            error={error}
+            streamingOutput={streamingOutput}
+            useStreaming={useStreaming}
+            setUseStreaming={setUseStreaming}
+            outputRef={outputRef}
+            onRunCaptioning={handleRunCaptioning}
+            onStopCaptioning={stopCaptioning}
           />
         )}
 
