@@ -29,7 +29,7 @@ def get_user_config_dir():
     config_dir.mkdir(exist_ok=True)
     return config_dir
 
-def get_user_config_backup_path(filename:str='caption.yaml'):
+def get_user_config_backup_path(filename:str="caption.yaml"):
     """Get the path to the user's config backup file"""
     return get_user_config_dir() / filename
 
@@ -42,7 +42,7 @@ def backup_config_to_user_dir(config_path):
         return True
     return False
 
-def backup_config_to_user_dir_with_timestamp(config_path) -> bool:
+def backup_config_to_user_dir_with_timestamp(config_path:str="caption.yaml") -> bool:
     """Backup the config file with a timestamp to the user directory so that old configs are logged
     Returns bool if backup successful"""
     current_time = time.localtime()
@@ -132,11 +132,10 @@ def get_hint_sources():
             'error': f'Failed to get hint sources: {str(e)}'
         }), 500
 
-def config_init_restore_backup_log(config_path) -> bool:
+def config_init_restore_backup(config_path) -> bool:
     """ App reinstall will wipe config, so this will attempt to 
     1. restore config from userhome or initialize from template
     2. backup config to userhome for restore after app reinstall
-    3. backup config to userhome with timestamp for general logging
     Returns success (bool)"""
     init_config_path = "init.yaml"
     if not os.path.exists(config_path):
@@ -146,7 +145,6 @@ def config_init_restore_backup_log(config_path) -> bool:
             shutil.copy2(init_config_path, config_path)
             print(f"Created {config_path} from {init_config_path}")
             backup_config_to_user_dir(config_path) # for app reinstall/restore
-            backup_config_to_user_dir_with_timestamp(config_path) # for logging purposes
         else:
             return False
     return True
@@ -156,7 +154,7 @@ def get_config():
     try:
         config_path = 'caption.yaml'
 
-        config_init_or_load_userhome_succeeded = config_init_restore_backup_log(config_path)
+        config_init_or_load_userhome_succeeded = config_init_restore_backup(config_path)
 
         if not config_init_or_load_userhome_succeeded:
             return jsonify({'error': 'Neither prior configuration file nor init template found'}), 404
@@ -257,11 +255,9 @@ class StreamingStdout:
     def flush(self):
         self.original_stdout.flush()
 
-    
 def run_captioning_with_streaming():
     global captioning_in_progress, captioning_lock, output_queue, current_task
 
-    # Store original stdout before try block to ensure it's always available in finally
     original_stdout = sys.stdout
     
     try:
@@ -298,15 +294,13 @@ def run_captioning_with_streaming():
 def generate_stream():
     """Generator function for Server-Sent Events"""
     global output_queue
-    
-    # Start captioning in a separate thread
+
     captioning_thread = threading.Thread(target=run_captioning_with_streaming)
     captioning_thread.daemon = True
     captioning_thread.start()
-    
-    # Send initial message
+
     yield "data: [STARTED] Captioning process started...\n\n"
-    
+
     while True:
         try:
             output = output_queue.get(timeout=1)
@@ -321,10 +315,8 @@ def generate_stream():
                 yield f"data: {output.rstrip()}\n\n"
                 
         except queue.Empty:
-            # Send keepalive message
             yield "data: [KEEPALIVE]\n\n"
             
-            # Check if thread is still alive
             if not captioning_thread.is_alive() and output_queue.empty():
                 break
         except Exception as e:
@@ -339,9 +331,9 @@ def run_captioning_stream():
     with captioning_lock:
         if captioning_in_progress:
             return jsonify({'error': 'Captioning is already in progress'}), 400
-        
-        # Set the flag immediately within the locked section to prevent race conditions
+
         captioning_in_progress = True
+        backup_config_to_user_dir_with_timestamp()
     
     return Response(generate_stream(), mimetype="text/event-stream")
 
