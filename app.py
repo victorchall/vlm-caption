@@ -57,55 +57,6 @@ def restore_config_from_user_dir(config_path):
         print(f"Failed to restore config from backup: {e}")
         return False
 
-@app.route('/api/run', methods=['POST'])
-def run_captioning():
-    global captioning_in_progress, current_task
-
-    if captioning_in_progress:
-        return jsonify({'error': 'Captioning is already in progress'}), 400
-
-    try:
-        captioning_in_progress = True
-
-        old_stdout = sys.stdout
-        sys.stdout = captured_output = io.StringIO()
-
-        # Create a new event loop and run the task
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        # Store the current task for potential cancellation
-        current_task = loop.create_task(run_captioning_task())
-
-        # Run until the task completes or is cancelled
-        try:
-            loop.run_until_complete(current_task)
-        except asyncio.CancelledError:
-            return jsonify({
-                'success': False,
-                'message': 'Captioning was cancelled by user'
-            }), 200
-
-        output = captured_output.getvalue()
-        sys.stdout = old_stdout
-
-        return jsonify({
-            'success': True,
-            'message': 'Captioning completed successfully',
-            'output': output
-        })
-
-    except Exception as e:
-        sys.stdout = old_stdout
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-    finally:
-        captioning_in_progress = False
-        loop.close()
-
 async def run_captioning_task():
     """Wrapper function for caption_main that handles cancellation"""
     try:
@@ -271,18 +222,19 @@ class StreamingStdout:
         self.original_stdout = original_stdout
         self.output_queue = output_queue
         self.buffer = ""
-    
+
     def write(self, text):
-        # Write to original stdout
+        if isinstance(text, bytes):
+            text = text.decode('utf-8', errors='replace')
+
         self.original_stdout.write(text)
         self.original_stdout.flush()
-        
-        # Add to buffer and queue complete lines
+
         self.buffer += text
         while '\n' in self.buffer:
             line, self.buffer = self.buffer.split('\n', 1)
             self.output_queue.put(line + '\n')
-    
+
     def flush(self):
         self.original_stdout.flush()
 
@@ -308,12 +260,25 @@ def run_captioning_with_streaming():
                 break
 
         original_stdout = sys.stdout
-        sys.stdout = StreamingStdout(original_stdout, output_queue)
+        
+        # Create a UTF-8 compatible wrapper for stdout to handle Unicode characters
+        if hasattr(original_stdout, 'buffer'):
+            # For regular stdout with a buffer (e.g., on Windows)
+            utf8_stdout = io.TextIOWrapper(
+                original_stdout.buffer,
+                encoding='utf-8',
+                errors='replace',
+                line_buffering=True
+            )
+        else:
+            # Fallback for other stdout types
+            utf8_stdout = original_stdout
+        
+        sys.stdout = StreamingStdout(utf8_stdout, output_queue)
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        # Store the current task for potential cancellation
         current_task = loop.create_task(run_captioning_task())
 
         try:
@@ -326,6 +291,7 @@ def run_captioning_with_streaming():
 
     except Exception as e:
         output_queue.put(f"data: [ERROR] {str(e)}\n\n")
+        raise e
     finally:
         sys.stdout = original_stdout
         captioning_in_progress = False
@@ -366,7 +332,7 @@ def generate_stream():
             yield f"data: [ERROR] Stream error: {str(e)}\n\n"
             break
 
-@app.route('/api/run-stream', methods=['GET'])
+@app.route('/api/run', methods=['GET'])
 def run_captioning_stream():
     """Start captioning process with real-time streaming output"""
     global captioning_in_progress

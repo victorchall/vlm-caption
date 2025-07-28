@@ -31,10 +31,8 @@ function App() {
   const [hintSourcesError, setHintSourcesError] = useState('');
   
   const [isRunning, setIsRunning] = useState(false);
-  const [output, setOutput] = useState('');
   const [error, setError] = useState('');
   const [streamingOutput, setStreamingOutput] = useState('');
-  const [useStreaming, setUseStreaming] = useState(true);
   const outputRef = useRef(null);
 
   const fetchModels = async (baseUrl) => {
@@ -235,39 +233,10 @@ function App() {
     }
   };
 
-  const runCaptioning = async () => {
-    if (!apiPort) return;
-    setIsRunning(true);
-    setOutput('');
-    setError('');
-
-    try {
-      const response = await fetch(`http://localhost:${apiPort}/api/run`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setOutput(data.output);
-      } else {
-        setError(data.error || 'An error occurred');
-      }
-    } catch (err) {
-      setError('Failed to connect to the server');
-    } finally {
-      setIsRunning(false);
-    }
-  };
-
   const runCaptioningWithStreaming = () => {
     if (!apiPort) return;
     setIsRunning(true);
     setStreamingOutput('');
-    setOutput('');
     setError('');
 
     const truncateOutput = (currentOutput, newData) => {
@@ -288,7 +257,7 @@ function App() {
       return '...[output truncated]...\n' + truncated;
     };
 
-    const eventSource = new EventSource(`http://localhost:${apiPort}/api/run-stream`, {
+    const eventSource = new EventSource(`http://localhost:${apiPort}/api/run`, {
       withCredentials: false
     });
 
@@ -337,18 +306,16 @@ function App() {
       const data = await response.json();
 
       if (data.success) {
-        if (useStreaming && window.currentEventSource) {
+        if (window.currentEventSource) {
           window.currentEventSource.close();
         }
 
         setIsRunning(false);
         setError('');
         
-        // Append cancellation message to streaming output if streaming, otherwise set regular output
-        if (useStreaming && streamingOutput) {
+        // Append cancellation message to streaming output
+        if (streamingOutput) {
           setStreamingOutput(prev => prev + '\n🛑 Captioning was cancelled by user\n');
-        } else {
-          setOutput('Captioning was cancelled by user');
         }
       } else {
         setError(data.error || 'Failed to cancel captioning');
@@ -362,11 +329,7 @@ function App() {
     // Save config before running
     await saveConfig();
 
-    if (useStreaming) {
-      runCaptioningWithStreaming();
-    } else {
-      runCaptioning();
-    }
+    runCaptioningWithStreaming();
   };
 
 return (
@@ -400,11 +363,8 @@ return (
             isSaving={isSaving}
             onSaveConfig={saveConfig}
             isRunning={isRunning}
-            output={output}
             error={error}
             streamingOutput={streamingOutput}
-            useStreaming={useStreaming}
-            setUseStreaming={setUseStreaming}
             outputRef={outputRef}
             onRunCaptioning={handleRunCaptioning}
             onStopCaptioning={stopCaptioning}

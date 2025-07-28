@@ -6,11 +6,8 @@ const RunTab = ({
   isSaving, 
   onSaveConfig,
   isRunning,
-  output,
   error,
   streamingOutput,
-  useStreaming,
-  setUseStreaming,
   outputRef,
   onRunCaptioning,
   onStopCaptioning
@@ -24,17 +21,8 @@ const RunTab = ({
 
   return (
     <div className="tab-content">
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-        <p style={{ margin: 0, marginRight: '15px' }}>Click the button below to start the captioning process</p>
-        <label style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
-          <input
-            type="checkbox"
-            checked={useStreaming}
-            onChange={(e) => setUseStreaming(e.target.checked)}
-            style={{ marginRight: '5px' }}
-          />
-          Real-time streaming
-        </label>
+      <div style={{ marginBottom: '10px' }}>
+        <p style={{ margin: 0 }}>Click the button below to start the captioning process</p>
       </div>
       
       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -78,14 +66,6 @@ const RunTab = ({
           >
             {streamingOutput}
           </pre>
-        </div>
-      )}
-
-      {/* Regular output (fallback) */}
-      {output && !streamingOutput && (
-        <div className="output">
-          <h3>Output:</h3>
-          <pre>{output}</pre>
         </div>
       )}
     </div>
