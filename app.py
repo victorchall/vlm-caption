@@ -18,9 +18,9 @@ app = Flask(__name__)
 CORS(app)
 
 captioning_in_progress = False
+captioning_lock = threading.Lock()  # Lock to prevent race conditions
 output_queue = queue.Queue()
 current_task = None
-task_lock = asyncio.Lock()
 
 def get_user_config_dir():
     """Get the user configuration directory path (cross-platform)"""
@@ -36,31 +36,23 @@ def get_user_config_backup_path(filename:str='caption.yaml'):
 def backup_config_to_user_dir(config_path):
     """Backup the config file to the user directory so it can be reloaded on app update
     Returns bool if backup successful"""
-    try:
-        if os.path.exists(config_path):
-            backup_path = get_user_config_backup_path()
-            shutil.copy2(config_path, backup_path)
-            print(f"Backed up config to {backup_path}")
-            return True
-    except Exception as e:
-        print(f"Failed to backup config: {e}")
+    if os.path.exists(config_path):
+        backup_path = get_user_config_backup_path()
+        shutil.copy2(config_path, backup_path)
+        return True
     return False
 
 def backup_config_to_user_dir_with_timestamp(config_path) -> bool:
     """Backup the config file with a timestamp to the user directory so that old configs are logged
     Returns bool if backup successful"""
-    try:
-        current_time = time.localtime()
-        formatted_time = time.strftime("%Y-%m-%d-%H-%M", current_time)
-        backup_path = f"caption_{formatted_time}.yaml"
+    current_time = time.localtime()
+    formatted_time = time.strftime("%Y-%m-%d-%H-%M", current_time)
+    backup_path = f"caption_{formatted_time}.yaml"
 
-        if os.path.exists(config_path):
-            backup_path = get_user_config_backup_path(backup_path)
-            shutil.copy2(config_path, backup_path)
-            print(f"Backed up config to {backup_path}")
-            return True
-    except Exception as e:
-        print(f"Failed to backup config: {e}")
+    if os.path.exists(config_path):
+        backup_path = get_user_config_backup_path(backup_path)
+        shutil.copy2(config_path, backup_path)
+        return True
     return False
 
 def restore_config_from_user_dir(config_path) -> bool:
@@ -186,7 +178,6 @@ def get_config():
 @app.route('/api/config', methods=['POST'])
 def update_config():
     try:
-        # Get JSON data from request
         data = request.get_json()
         
         if not data:
@@ -242,6 +233,7 @@ def update_config():
             'success': False,
             'error': f'Failed to save configuration: {str(e)}'
         }), 500
+        
 
 class StreamingStdout:
     """Custom stdout class that writes to both console and queue"""
@@ -265,43 +257,22 @@ class StreamingStdout:
     def flush(self):
         self.original_stdout.flush()
 
-def save_config_with_timestamp():
-    # saves the config when a "run caption" is executed for later review
-    current_time = time.localtime()
-    formatted_time = time.strftime("%Y-%m-%d-%H-%M", current_time)
-    config_path = "caption.yaml"
-    backup_path = f"caption_{formatted_time}.yaml"
-    with open(config_path, 'r', encoding='utf-8') as src, open(backup_path, 'w', encoding='utf-8') as dst:
-        dst.write(src.read())
     
 def run_captioning_with_streaming():
-    global captioning_in_progress, output_queue, current_task
+    global captioning_in_progress, captioning_lock, output_queue, current_task
 
+    # Store original stdout before try block to ensure it's always available in finally
+    original_stdout = sys.stdout
+    
     try:
-        captioning_in_progress = True
-
+        # Clear any remaining items in the output queue
         while not output_queue.empty():
             try:
                 output_queue.get_nowait()
             except queue.Empty:
                 break
 
-        original_stdout = sys.stdout
-        
-        # Create a UTF-8 compatible wrapper for stdout to handle Unicode characters
-        if hasattr(original_stdout, 'buffer'):
-            # For regular stdout with a buffer (e.g., on Windows)
-            utf8_stdout = io.TextIOWrapper(
-                original_stdout.buffer,
-                encoding='utf-8',
-                errors='replace',
-                line_buffering=True
-            )
-        else:
-            # Fallback for other stdout types TODO: may need testing if mac/linux UI builds are added
-            utf8_stdout = original_stdout
-        
-        sys.stdout = StreamingStdout(utf8_stdout, output_queue)
+        sys.stdout = StreamingStdout(original_stdout, output_queue)
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -317,10 +288,11 @@ def run_captioning_with_streaming():
         loop.close()
 
     except Exception as e:
-        output_queue.put(f"data: [ERROR] {str(e)}\n\n")
-        raise e
+        output_queue.put(f"data: [ERROR] run_captioning_with_streaming {str(e)}\n\n")
     finally:
         sys.stdout = original_stdout
+    
+    with captioning_lock:
         captioning_in_progress = False
 
 def generate_stream():
@@ -362,10 +334,14 @@ def generate_stream():
 @app.route('/api/run', methods=['GET'])
 def run_captioning_stream():
     """Start captioning process with real-time streaming output"""
-    global captioning_in_progress
+    global captioning_in_progress, captioning_lock
     
-    if captioning_in_progress:
-        return jsonify({'error': 'Captioning is already in progress'}), 400
+    with captioning_lock:
+        if captioning_in_progress:
+            return jsonify({'error': 'Captioning is already in progress'}), 400
+        
+        # Set the flag immediately within the locked section to prevent race conditions
+        captioning_in_progress = True
     
     return Response(generate_stream(), mimetype="text/event-stream")
 
