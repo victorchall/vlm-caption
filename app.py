@@ -29,12 +29,13 @@ def get_user_config_dir():
     config_dir.mkdir(exist_ok=True)
     return config_dir
 
-def get_user_config_backup_path():
+def get_user_config_backup_path(filename:str='caption.yaml'):
     """Get the path to the user's config backup file"""
-    return get_user_config_dir() / 'caption.yaml'
+    return get_user_config_dir() / filename
 
 def backup_config_to_user_dir(config_path):
-    """Backup the config file to the user directory"""
+    """Backup the config file to the user directory so it can be reloaded on app update
+    Returns bool if backup successful"""
     try:
         if os.path.exists(config_path):
             backup_path = get_user_config_backup_path()
@@ -43,10 +44,28 @@ def backup_config_to_user_dir(config_path):
             return True
     except Exception as e:
         print(f"Failed to backup config: {e}")
-        return False
+    return False
 
-def restore_config_from_user_dir(config_path):
-    """Restore config from user directory backup if it exists"""
+def backup_config_to_user_dir_with_timestamp(config_path) -> bool:
+    """Backup the config file with a timestamp to the user directory so that old configs are logged
+    Returns bool if backup successful"""
+    try:
+        current_time = time.localtime()
+        formatted_time = time.strftime("%Y-%m-%d-%H-%M", current_time)
+        backup_path = f"caption_{formatted_time}.yaml"
+
+        if os.path.exists(config_path):
+            backup_path = get_user_config_backup_path(backup_path)
+            shutil.copy2(config_path, backup_path)
+            print(f"Backed up config to {backup_path}")
+            return True
+    except Exception as e:
+        print(f"Failed to backup config: {e}")
+    return False
+
+def restore_config_from_user_dir(config_path) -> bool:
+    """Restore config from user directory backup if it exists
+    Returns bool if backup successful"""
     try:
         backup_path = get_user_config_backup_path()
         if backup_path.exists():
@@ -55,7 +74,7 @@ def restore_config_from_user_dir(config_path):
             return True
     except Exception as e:
         print(f"Failed to restore config from backup: {e}")
-        return False
+    return False
 
 async def run_captioning_task():
     """Wrapper function for caption_main that handles cancellation"""
@@ -121,35 +140,43 @@ def get_hint_sources():
             'error': f'Failed to get hint sources: {str(e)}'
         }), 500
 
+def config_init_restore_backup_log(config_path) -> bool:
+    """ App reinstall will wipe config, so this will attempt to 
+    1. restore config from userhome or initialize from template
+    2. backup config to userhome for restore after app reinstall
+    3. backup config to userhome with timestamp for general logging
+    Returns success (bool)"""
+    init_config_path = "init.yaml"
+    if not os.path.exists(config_path):
+        if restore_config_from_user_dir(config_path):
+            print("Restored configuration from user backup")
+        elif os.path.exists(init_config_path):
+            shutil.copy2(init_config_path, config_path)
+            print(f"Created {config_path} from {init_config_path}")
+            backup_config_to_user_dir(config_path) # for app reinstall/restore
+            backup_config_to_user_dir_with_timestamp(config_path) # for logging purposes
+        else:
+            return False
+    return True
+
 @app.route('/api/config', methods=['GET'])
 def get_config():
     try:
         config_path = 'caption.yaml'
-        init_config_path = 'init.yaml'
-        
-        # Check if config file exists in local directory
-        if not os.path.exists(config_path):
-            # Try to restore from user backup directory first
-            if restore_config_from_user_dir(config_path):
-                print("Restored configuration from user backup")
-            elif os.path.exists(init_config_path):
-                # No backup found, create from init.yaml
-                shutil.copy2(init_config_path, config_path)
-                print(f"Created {config_path} from {init_config_path}")
-                # Also backup this initial config to user directory
-                backup_config_to_user_dir(config_path)
-            else:
-                return jsonify({'error': 'Neither configuration file nor initialization template found'}), 404
-        
-        # Load YAML configuration
+
+        config_init_or_load_userhome_succeeded = config_init_restore_backup_log(config_path)
+
+        if not config_init_or_load_userhome_succeeded:
+            return jsonify({'error': 'Neither prior configuration file nor init template found'}), 404
+
         with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
-        
+
         return jsonify({
             'success': True,
             'config': config
         })
-    
+
     except Exception as e:
         return jsonify({
             'success': False,
@@ -271,7 +298,7 @@ def run_captioning_with_streaming():
                 line_buffering=True
             )
         else:
-            # Fallback for other stdout types
+            # Fallback for other stdout types TODO: may need testing if mac/linux UI builds are added
             utf8_stdout = original_stdout
         
         sys.stdout = StreamingStdout(utf8_stdout, output_queue)
