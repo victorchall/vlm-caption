@@ -177,13 +177,8 @@ Mostly self explanatory.  Paste in the path to the directory you want processed 
 
 ## Advanced tip
 
-- **Metadata collection**: Adding context is **incredibly powerful**. *Think ahead* when you decide to collect and build a new set of data considering how you can capture other metadata. 
+- **Metadata collection**: Adding context is **incredibly powerful**. *Think ahead* when you decide to collect and build a new dataset considering how you can capture other metadata. 
 
     For instance, if you are writing webscrapers, make sure to collect metadata from the webpage as you go rather than blindly just download each image. Perhaps you might include the website address or full URI of the webpage, the `<title>` tag from the webpage, or the `alt-text` field. Save this information with each image, or in a database. Then feed into the VLM with a `hint_source`. New hint sources are very easy for an amateur Python programmer to write, or you can have an LLM write for you. 
 
     See [HINTSOURCES.md](HINTSOURCES.md) for more information.
-
-
-## Dev
-
-See [DEV.md](DEV.md)

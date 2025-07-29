@@ -52,7 +52,7 @@ graph TD
 
     subgraph "Backend - Flask app.py"
         B["api/config<br>(config obj)"]
-        C["api/run-stream<br>"]
+        C["api/run<br>"]
     end
 
     subgraph "Core Function script"
