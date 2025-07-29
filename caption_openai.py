@@ -110,10 +110,20 @@ async def process_image(client: openai.AsyncOpenAI, image_path, conf) -> Tuple[s
             messages.append({"role": "assistant", "content": [{"type": "text", "text": response_text}]})
             save_debug_task = asyncio.create_task(write_debug_messages(messages, i))
             i += 1
+
+            if i == len(prompts):
+                final_summary_response,completion_tokens_usage,prompt_tokens_usage = await \
+                    run_summary_retry_rules(client, 
+                                            conf, 
+                                            messages, 
+                                            summary_response=response_text,
+                                            completion_tokens_usage=completion_tokens_usage,
+                                            prompt_tokens_usage=completion_tokens_usage)
+
     await save_debug_task
-    response_text = response_text.strip()
+    final_summary_response = final_summary_response.strip()
     messages = remove_base64_image(messages)
-    return response_text, json.dumps(messages, indent=2), prompt_tokens_usage, completion_tokens_usage
+    return final_summary_response, json.dumps(messages, indent=2), prompt_tokens_usage, completion_tokens_usage
 
 async def main():
     import hints.registration as registration
@@ -150,8 +160,8 @@ async def main():
             print("Captioning task was cancelled during image processing")
             raise
 
-        # aggregated_prompt_token_usage += prompt_token_usage
-        # aggregated_completion_token_usage += aggregated_completion_token_usage
+        aggregated_prompt_token_usage += prompt_token_usage
+        aggregated_completion_token_usage += aggregated_completion_token_usage
 
         print(f" --> Final caption:\n{caption_text}")
         print(f" --> prompt_token_usage: {prompt_token_usage}, completion_token_usage: {completion_token_usage}")

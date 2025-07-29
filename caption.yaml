@@ -25,7 +25,23 @@ prompts:
 - To finalize, summarize the description of the image in four to five sentences, focusing
   on factual information present in the image. Do not include any markdown, headers,
   or special formatting. Do not start with 'the image depicts' or similar.  Simply
-  exclude such phrases and focus on what IS visible. 
+  exclude such phrases and focus on what IS visible.
+retry_rules:
+  - "rule_name": "conversation_rejections"
+    "phrases":
+      - "examination of"
+      - "examination process"
+      - "analysis process"
+      - "during careful review"
+      - "output response"
+      - "interaction exchanges"
+      - "conversation dialogue"
+      - "step-by-step manner"
+      - "during analysis"
+      - "factual reporting"
+      - "provided analysis"
+      - "within scope"
+    "rejection_note": "Please retry your summary and exclude these sorts of words or phrases: [phrases]. Focus on creating the summary as instructed and do not comment on the conversation/analysis process."
 hint_sources:
 - full_path
 - json

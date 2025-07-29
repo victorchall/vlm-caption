@@ -51,6 +51,51 @@ const ConfigForm = ({
     onConfigChange('prompts', newPrompts);
   };
 
+  // Retry Rules handlers
+  const handleRetryRuleChange = (ruleIndex, field, value) => {
+    const newRetryRules = [...config.retry_rules];
+    newRetryRules[ruleIndex] = { ...newRetryRules[ruleIndex], [field]: value };
+    onConfigChange('retry_rules', newRetryRules);
+  };
+
+  const handleRetryRulePhraseChange = (ruleIndex, phraseIndex, value) => {
+    const newRetryRules = [...config.retry_rules];
+    const newPhrases = [...newRetryRules[ruleIndex].phrases];
+    newPhrases[phraseIndex] = value;
+    newRetryRules[ruleIndex] = { ...newRetryRules[ruleIndex], phrases: newPhrases };
+    onConfigChange('retry_rules', newRetryRules);
+  };
+
+  const addRetryRule = () => {
+    const newRule = {
+      rule_name: '',
+      phrases: [''],
+      rejection_note: ''
+    };
+    onConfigChange('retry_rules', [...config.retry_rules, newRule]);
+  };
+
+  const removeRetryRule = (ruleIndex) => {
+    const newRetryRules = config.retry_rules.filter((_, i) => i !== ruleIndex);
+    onConfigChange('retry_rules', newRetryRules);
+  };
+
+  const addRetryRulePhrase = (ruleIndex) => {
+    const newRetryRules = [...config.retry_rules];
+    newRetryRules[ruleIndex] = { 
+      ...newRetryRules[ruleIndex], 
+      phrases: [...newRetryRules[ruleIndex].phrases, ''] 
+    };
+    onConfigChange('retry_rules', newRetryRules);
+  };
+
+  const removeRetryRulePhrase = (ruleIndex, phraseIndex) => {
+    const newRetryRules = [...config.retry_rules];
+    const newPhrases = newRetryRules[ruleIndex].phrases.filter((_, i) => i !== phraseIndex);
+    newRetryRules[ruleIndex] = { ...newRetryRules[ruleIndex], phrases: newPhrases };
+    onConfigChange('retry_rules', newRetryRules);
+  };
+
   if (configLoading) return <p>Loading configuration...</p>;
 
   return (
@@ -241,6 +286,80 @@ const ConfigForm = ({
             className="add-prompt-button"
           >
             Add Prompt
+          </button>
+        </div>
+
+        <div className="form-group">
+          <label>Retry Rules</label>
+          <span className="description-text">Define rules to detect unwanted phrases or words in the final summary and ask the model to redo the summary if any are detected.</span>
+          {config.retry_rules.map((rule, ruleIndex) => (
+            <div key={ruleIndex} className="retry-rule-item">
+              <div className="retry-rule-header">
+                <label>Rule name:</label>
+                <input
+                  type="text"
+                  value={rule.rule_name}
+                  onChange={(e) => handleRetryRuleChange(ruleIndex, 'rule_name', e.target.value)}
+                  placeholder={`Rule Name ${ruleIndex + 1}`}
+                  className="retry-rule-name"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeRetryRule(ruleIndex)}
+                  className="remove-prompt-button"
+                >
+                  &times;
+                </button>
+              </div>
+              
+              <div className="retry-rule-phrases">
+                <label>Phrases to detect:</label>
+                {rule.phrases.map((phrase, phraseIndex) => (
+                  <div key={phraseIndex} className="retry-rule-phrase-item">
+                    <input
+                      type="text"
+                      value={phrase}
+                      onChange={(e) => handleRetryRulePhraseChange(ruleIndex, phraseIndex, e.target.value)}
+                      placeholder={`Phrase ${phraseIndex + 1}`}
+                      className="retry-rule-phrase"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeRetryRulePhrase(ruleIndex, phraseIndex)}
+                      className="remove-prompt-button"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => addRetryRulePhrase(ruleIndex)}
+                  className="add-prompt-button"
+                  style={{ fontSize: '12px', padding: '4px 8px', marginTop: '5px' }}
+                >
+                  Add Phrase
+                </button>
+              </div>
+
+              <div className="retry-rule-note">
+                <label>Rejection Note:</label>
+                <textarea
+                  value={rule.rejection_note}
+                  onChange={(e) => handleRetryRuleChange(ruleIndex, 'rejection_note', e.target.value)}
+                  placeholder="Message to send when retrying (use [phrases] to insert the detected phrases)"
+                  rows="2"
+                  className="retry-rule-rejection-note"
+                />
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addRetryRule}
+            className="add-prompt-button"
+          >
+            Add Retry Rule
           </button>
         </div>
 
