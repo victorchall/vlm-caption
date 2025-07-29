@@ -57,7 +57,7 @@
 }
 
 .stop-button:hover {
-  background-color: #c82333;
+  background-color: #b01c2b;
 }
 
 .error {
@@ -411,4 +411,80 @@
   color: #cccccc;
   font-size: 0.9em;
   margin-top: 5px;
+}
+
+/* Retry Rules Styling */
+.retry-rule-item {
+  border: 1px solid #495057;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.retry-rule-header {
+  display: flex;
+  align-items: left;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.retry-rule-name {
+  flex-grow: 1;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  font-size: 0.95rem;
+  background-color: #ffffff;
+  color: #495057;
+  font-weight: bold;
+}
+
+.retry-rule-phrases {
+  margin-bottom: 15px;
+}
+
+.retry-rule-phrases label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: #ffffff;
+  font-weight: normal;
+}
+
+.retry-rule-phrase-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.retry-rule-phrase {
+  flex-grow: 1;
+  padding: 6px 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  background-color: #ffffff;
+  color: #495057;
+}
+
+.retry-rule-note label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: #ffffff;
+  font-weight: normal;
+}
+
+.retry-rule-rejection-note {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  background-color: #ffffff;
+  color: #495057;
+  resize: vertical;
+  box-sizing: border-box;
 }
