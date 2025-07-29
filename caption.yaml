@@ -4,19 +4,20 @@ api_key_env_vars:
 - ANTHROPIC_API_KEY
 - GEMINI_API_KEY
 - MY_API_KEY_ENV_VAR_NAME
-model: ''
+model: llama-4-scout-17b-16e-instruct
 api_key: ''
 max_tokens: 16384
-system_prompt: You are to analyze an image and provide information based on what is
-  visible in the image. Do not embellish, and avoid langauge like 'showcases' or 'features,'
-  preferring to focus on factual information. Make sure anything that is out of frame
-  is NOT described. If metadata is present it can be trusted to be accurate. Never
-  include things that are not present in the image, and do not say things like 'no
-  characters are visible.' Do not write things like 'No other characters are visible'
-  or 'The character's features do not align with any specific character'.
+system_prompt: You are to analyze an image 
+  and provide information based on what is visible in the image. Do not embellish,
+  and avoid langauge like 'showcases' or 'features,' preferring to focus on factual
+  information. Make sure anything that is out of frame is NOT described. 
+  If metadata is present it can be trusted to be accurate. Never include things
+  that are not present in the image, and do not say things like 'no characters are
+  visible.' Do not write things like 'No other characters are visible' or 'The character's
+  features do not align with any specific character'.
 global_metadata_file: ''
 prompts:
-- Describe the image in detail. foo
+- Describe the image in detail.
 - Can you positively identify any characters, objects, or locations based on the codex
   or metadata? If you can identify characters, give reasons for the positive id.
 - Describe the framing and composition, shot type, shot angle. For this request, think
@@ -47,4 +48,4 @@ hint_sources:
 - metadata
 base_directory: C:\my_project\to_be_captioned
 recursive: true
-skip_if_txt_exists: false
+skip_if_txt_exists: true
