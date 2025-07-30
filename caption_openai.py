@@ -111,9 +111,8 @@ async def process_image(client: openai.AsyncOpenAI, image_path, conf) -> Tuple[s
             messages.append({"role": "assistant", "content": [{"type": "text", "text": response_text}]})
             save_debug_task = asyncio.create_task(write_debug_messages(messages, i))
             i += 1
-
-            if i == len(prompts):
-                final_summary_response,completion_tokens_usage,prompt_tokens_usage = await \
+            if i == len(prompts)-1:
+                final_summary_response, completion_tokens_usage, prompt_tokens_usage = await \
                     run_summary_retry_rules(client, 
                                             conf, 
                                             messages, 
