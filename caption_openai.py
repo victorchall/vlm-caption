@@ -10,6 +10,7 @@ from file_utils.file_access import image_walk, save_caption
 from hints.hint_sources import get_hints
 import logging
 from typing import Tuple, Dict, List
+from rules.summary_retry import run_summary_retry_rules
 
 def remove_base64_image(messages: List) -> List:
     """ Removes the base64 image from a messages for the sake of logging """
