@@ -155,7 +155,7 @@ Mostly self explanatory.  Paste in the path to the directory you want processed 
 
 ## Tips
 
-- **Prompt Tuning**: Experiment with different prompt sequences for better results. The example prompt chain included should give you some good ideas. Note that 1 to 5 is generally sufficient, and too many may lead to worse outcomes depending on the model used, and increased VRAM usage.
+- **Prompt Tuning**: Read [PROMPTS.MD](PROMPTS.MD) for more tips on tuning your system prompt and prompt series.
 
 - **Presort Data**: Sort your data into subdirectories ahead of time with directory names that might help steer the model, such as `c:/myimages/cloud strife` and `c:/myimages/rufus shinra/`, then use the `full_path` hint_source. 
 
