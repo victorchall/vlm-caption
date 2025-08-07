@@ -239,11 +239,9 @@ class StreamingStdout:
         self.original_stdout = original_stdout
         self.output_queue = output_queue
         self.buffer = ""
+        self.encoding = 'utf-8'
 
     def write(self, text):
-        if isinstance(text, bytes):
-            text = text.decode('utf-8', errors='replace')
-
         self.original_stdout.write(text)
         self.original_stdout.flush()
 
