@@ -266,7 +266,9 @@ def run_captioning_with_streaming():
             except queue.Empty:
                 break
 
-        sys.stdout = StreamingStdout(original_stdout, output_queue)
+        # Wrap stdout buffer in a UTF-8 text wrapper to handle unicode
+        utf8_stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+        sys.stdout = StreamingStdout(utf8_stdout, output_queue)
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
