@@ -25,7 +25,7 @@ Slightly old video, app overview with install: [VLM Caption, multi-turn, data-dr
 
 [Tips](Tips)
 
-[Dev/Contribution](DEV.md)
+[Dev/Contribution](DEV.MD)
 
 ## Install
 
