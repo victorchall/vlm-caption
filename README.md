@@ -142,7 +142,7 @@ If a source isn't available for a given image, it is skipped.  For instances if 
 
 See [HINTSOURCES.md](HINTSOURCES.md) for details on available hint sources and how they work. 
 
-[Developers](DEV.md) can also add their own custom hint sources.
+[Developers](DEV.MD) can also add their own custom hint sources.
 
 ### Directory Processing
 
