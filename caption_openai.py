@@ -161,7 +161,7 @@ async def main():
             print("Captioning task was cancelled by user")
             return
 
-        print(f"\nProcessing {image_path}")
+        print(filter_ascii(f"\nProcessing {image_path}"))
         try:
             caption_text, chat_history, prompt_token_usage, completion_token_usage = await process_image(client, image_path, conf)
         except openai.APIConnectionError as e:
