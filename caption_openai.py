@@ -12,6 +12,16 @@ import logging
 from typing import Tuple, Dict, List
 from rules.summary_retry import run_summary_retry_rules
 
+def filter_ascii(input_str):
+    """
+    Removes any characters outside the standard 7-bit ASCII range (0–127).
+    Currently to deal with issues when std out is streamed to GUI.
+    """
+    return ''.join(
+        ch if ord(ch) <= 126 else "?"
+        for ch in input_str
+    )
+
 def remove_base64_image(messages: List) -> List:
     """ Removes the base64 image from a messages for the sake of logging """
     for message in messages:
@@ -136,7 +146,7 @@ async def main():
             global_metadata = await f.read()
             conf.system_prompt = f"{global_metadata}\n{conf.system_prompt}"
 
-    print(f" -> SYSTEM PROMPT:\n{conf.system_prompt}\n")
+    print(filter_ascii(f" -> SYSTEM PROMPT:\n{conf.system_prompt}\n"))
 
     api_key = resolve_api_key(conf)
 
@@ -163,7 +173,7 @@ async def main():
         aggregated_prompt_token_usage += prompt_token_usage
         aggregated_completion_token_usage += aggregated_completion_token_usage
 
-        print(f" --> Final caption:\n{caption_text}")
+        print(filter_ascii(f" --> Final caption:\n{caption_text}"))
         print(f" --> prompt_token_usage: {prompt_token_usage}, completion_token_usage: {completion_token_usage}")
         await save_caption(file_path=image_path, caption_text=caption_text, debug_info=chat_history)
 
