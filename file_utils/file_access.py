@@ -2,7 +2,6 @@ import os
 import aiofiles
 from typing import AsyncGenerator
 import asyncio
-from ..caption_openai import filter_ascii
 
 # Supported image extensions
 IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp')
@@ -61,7 +60,7 @@ async def save_caption(file_path: str, caption_text: str, debug_info: str) -> No
             #await asyncio.gather(f_cap.write(caption_text),f_log.write(debug_info))
             await asyncio.gather(f_cap.write(caption_text))
 
-        print(filter_ascii(f" ----> Saved caption for {file_path} to {txt_path}"))
+        #print(filter_ascii(f" ----> Saved caption for {file_path} to {txt_path}"))
 
     except Exception as e:
         print(f"Error saving caption for {file_path}: {e}")
