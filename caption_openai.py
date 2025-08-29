@@ -4,6 +4,7 @@ import asyncio
 import openai
 import json
 import aiofiles
+import time
 from omegaconf import OmegaConf
 import os
 from file_utils.file_access import image_walk, save_caption
@@ -11,6 +12,7 @@ from hints.hint_sources import get_hints
 import logging
 from typing import Tuple, Dict, List
 from rules.summary_retry import run_summary_retry_rules
+
 
 def filter_ascii(input_str):
     """
@@ -91,6 +93,9 @@ async def process_image(client: openai.AsyncOpenAI, image_path, conf) -> Tuple[s
             chunk = event.choices[0].delta.content
             #print(chunk, end="")
             response_text += chunk  # Accumulate the response text
+        if event.usage:
+            completion_tokens_usage += event.usage.completion_tokens
+            prompt_tokens_usage += event.usage.prompt_tokens
 
     messages.append({"role": "assistant", "content": [{"type": "text", "text": response_text}]})
     i=0
@@ -113,14 +118,14 @@ async def process_image(client: openai.AsyncOpenAI, image_path, conf) -> Tuple[s
             async for event in stream:
                 if event.choices and event.choices[0].delta.content is not None:
                     chunk = event.choices[0].delta.content
-                    #print(chunk, end="")
-                    response_text += chunk  # Accumulate the response text
+                    response_text += chunk
                 if event.usage:
                     completion_tokens_usage += event.usage.completion_tokens
                     prompt_tokens_usage += event.usage.prompt_tokens
             messages.append({"role": "assistant", "content": [{"type": "text", "text": response_text}]})
             save_debug_task = asyncio.create_task(write_debug_messages(messages, i))
             i += 1
+            final_summary_response = response_text
             if i == len(prompts)-1:
                 final_summary_response, completion_tokens_usage, prompt_tokens_usage = await \
                     run_summary_retry_rules(client, 
@@ -129,6 +134,8 @@ async def process_image(client: openai.AsyncOpenAI, image_path, conf) -> Tuple[s
                                             summary_response=response_text,
                                             completion_tokens_usage=completion_tokens_usage,
                                             prompt_tokens_usage=completion_tokens_usage)
+    else:
+        final_summary_response = response_text
 
     await save_debug_task
     final_summary_response = final_summary_response.strip()
@@ -163,7 +170,9 @@ async def main():
 
         print(filter_ascii(f"\nProcessing {image_path}"))
         try:
+            start_time = time.perf_counter()
             caption_text, chat_history, prompt_token_usage, completion_token_usage = await process_image(client, image_path, conf)
+            total_time = (time.perf_counter() - start_time)
         except openai.APIConnectionError as e:
             print(f"{e}\nAPI Error. Check that your service is running and caption.yaml has the correct base_url")
         except asyncio.CancelledError:
@@ -173,7 +182,7 @@ async def main():
         aggregated_prompt_token_usage += prompt_token_usage
         aggregated_completion_token_usage += aggregated_completion_token_usage
 
-        print(filter_ascii(f" --> Final caption:\n{caption_text}"))
+        print(filter_ascii(f" --> Took {total_time:.2f}s, Final caption:\n{caption_text}"))
         print(f" --> prompt_token_usage: {prompt_token_usage}, completion_token_usage: {completion_token_usage}")
         await save_caption(file_path=image_path, caption_text=caption_text, debug_info=chat_history)
 
