@@ -109,6 +109,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup MSBuild and Windows SDK
+        uses: microsoft/setup-msbuild@v1.1
+
       - name: Download CLI Artifact
         uses: actions/download-artifact@v4
         with:
