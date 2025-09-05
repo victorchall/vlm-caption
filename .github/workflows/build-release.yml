@@ -145,7 +145,7 @@ jobs:
           }
           echo "Found signtool at: $signtoolPath"
           echo "Signing $installer..."
-          signtool sign `
+          & "$signtoolPath" sign `
             /f codesign.pfx `
             /p "${{ secrets.CODESIGN_PFX_PASSWORD }}" `
             /tr http://timestamp.digicert.com `
