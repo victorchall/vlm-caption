@@ -138,6 +138,12 @@ jobs:
             Write-Error "Installer exe not found!"
             exit 1
           }
+          $signtoolPath = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" | Select-Object -First 1 -ExpandProperty FullName
+          if ($null -eq $signtoolPath) {
+              Write-Error "signtool.exe not found!"
+              exit 1
+          }
+          echo "Found signtool at: $signtoolPath"
           echo "Signing $installer..."
           signtool sign `
             /f codesign.pfx `
