@@ -122,6 +122,30 @@ jobs:
       - name: Read version from file
         id: version
         run: echo "VERSION_TAG=$(cat version.txt)" >> $env:GITHUB_OUTPUT
+      
+      - name: Restore code signing cert
+        shell: bash
+        run: |
+          echo "${{ secrets.CODESIGN_PFX }}" | base64 -d > codesign.pfx
+
+      - name: Sign installer
+        run: |
+          $installer = Get-ChildItem -Path . -Filter "VLM_Caption_Setup_v*.exe" -Recurse | Select-Object -First 1
+          if ($null -eq $installer) {
+            Write-Error "Installer exe not found!"
+            exit 1
+          }
+          echo "Signing $installer..."
+          signtool sign `
+            /f codesign.pfx `
+            /p "${{ secrets.CODESIGN_PFX_PASSWORD }}" `
+            /tr http://timestamp.digicert.com `
+            /td sha256 `
+            /fd sha256 `
+            "$installer"
+
+      - name: Remove signing cert
+        run: Remove-Item codesign.pfx -Force
 
       - name: Generate Changelog
         id: changelog

@@ -11,7 +11,6 @@ const ConfigForm = ({
   hintSources,
   hintSourcesLoading,
   hintSourcesError,
-  isSaving,
   configLoading,
   configError
 }) => {
@@ -25,6 +24,16 @@ const ConfigForm = ({
       const lastSeparatorIndex = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
       const directoryPath = path.substring(0, lastSeparatorIndex);
       onConfigChange('base_directory', directoryPath);
+    }
+  };
+
+  const handleExampleDirectorySelect = (e) => {
+    if (e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const path = file.path;
+      const lastSeparatorIndex = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+      const directoryPath = path.substring(0, lastSeparatorIndex);
+      onConfigChange('example_directory', directoryPath);
     }
   };
 
@@ -344,6 +353,7 @@ const ConfigForm = ({
 
               <div className="retry-rule-note">
                 <label>Rejection Note:</label>
+                <div class="hint-source-description">Use [phrases] to include the rejected phrases</div>
                 <textarea
                   value={rule.rejection_note}
                   onChange={(e) => handleRetryRuleChange(ruleIndex, 'rejection_note', e.target.value)}

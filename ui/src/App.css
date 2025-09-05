@@ -424,7 +424,7 @@
 
 .retry-rule-header {
   display: flex;
-  align-items: left;
+  align-items: center;
   gap: 10px;
   margin-bottom: 15px;
 }
