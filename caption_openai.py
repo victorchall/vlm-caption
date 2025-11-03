@@ -142,11 +142,39 @@ async def process_image(client: openai.AsyncOpenAI, image_path, conf) -> Tuple[s
     messages = remove_base64_image(messages)
     return final_summary_response, json.dumps(messages, indent=2), prompt_tokens_usage, completion_tokens_usage
 
+async def process_batch(client: openai.AsyncOpenAI, image_paths: list, conf) -> Tuple[int, int]:
+    """Process a batch of images concurrently and return aggregated token usage."""
+    tasks = [process_image(client, image_path, conf) for image_path in image_paths]
+    
+    # Process all images in the batch concurrently
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    batch_prompt_tokens = 0
+    batch_completion_tokens = 0
+
+    for i, result in enumerate(results):
+        if isinstance(result, Exception):
+            print(filter_ascii(f"Error processing {image_paths[i]}: {result}"))
+        else:
+            caption_text, chat_history, prompt_token_usage, completion_token_usage = result # type: ignore
+
+            await save_caption(file_path=image_paths[i], caption_text=caption_text, debug_info=chat_history)
+
+            batch_prompt_tokens += prompt_token_usage
+            batch_completion_tokens += completion_token_usage
+
+            print(filter_ascii(f" --> Processed {image_paths[i]}"))
+            print(f" --> prompt_token_usage: {prompt_token_usage}, completion_token_usage: {completion_token_usage}")
+
+    return batch_prompt_tokens, batch_completion_tokens
+
 async def main():
     import hints.registration as registration
     registration._validate_hint_sources()
 
     conf = OmegaConf.load("caption.yaml")
+    
+    concurrent_batch_size = conf.concurrent_batch_size
 
     if conf.get("global_metadata_file"): # type: ignore
         async with aiofiles.open(conf.global_metadata_file) as f:
@@ -154,6 +182,7 @@ async def main():
             conf.system_prompt = f"{global_metadata}\n{conf.system_prompt}"
 
     print(filter_ascii(f" -> SYSTEM PROMPT:\n{conf.system_prompt}\n"))
+    print(filter_ascii(f" -> CONCURRENT BATCH SIZE: {concurrent_batch_size}\n"))
 
     api_key = resolve_api_key(conf)
 
@@ -162,32 +191,31 @@ async def main():
     aggregated_prompt_token_usage = 0
     aggregated_completion_token_usage = 0
 
+    # Collect images in batches for concurrent processing
+    batch = []
     async for image_path in image_walk(conf.base_directory, recursive=conf.recursive, skip_if_txt_exists=conf.skip_if_txt_exists):
         current_task = asyncio.current_task()
         if current_task is not None and current_task.cancelled():
             print("Captioning task was cancelled by user")
             return
 
-        print(filter_ascii(f"\nProcessing {image_path}"))
-        try:
+        batch.append(image_path)
+
+        if len(batch) >= concurrent_batch_size:
+            print(filter_ascii(f"\nProcessing batch of {len(batch)} images:"))
             start_time = time.perf_counter()
-            caption_text, chat_history, prompt_token_usage, completion_token_usage = await process_image(client, image_path, conf)
-            total_time = (time.perf_counter() - start_time)
-        except openai.APIConnectionError as e:
-            print(f"{e}\nAPI Error. Check that your service is running and caption.yaml has the correct base_url")
-        except asyncio.CancelledError:
-            print("Captioning task was cancelled during image processing")
-            raise
+            
+            batch_prompt_tokens, batch_completion_tokens = await process_batch(client, batch, conf)
+            
+            batch_time = (time.perf_counter() - start_time)
+            print(filter_ascii(f" --> Batch completed in {batch_time:.2f}s, {batch_time/concurrent_batch_size:.2f}s per image"))
+            
+            aggregated_prompt_token_usage += batch_prompt_tokens
+            aggregated_completion_token_usage += batch_completion_tokens
+            batch = []
 
-        aggregated_prompt_token_usage += prompt_token_usage
-        aggregated_completion_token_usage += aggregated_completion_token_usage
-
-        print(filter_ascii(f" --> Took {total_time:.2f}s, Final caption:\n{caption_text}"))
-        print(f" --> prompt_token_usage: {prompt_token_usage}, completion_token_usage: {completion_token_usage}")
-        await save_caption(file_path=image_path, caption_text=caption_text, debug_info=chat_history)
 
     print(F" -> JOB COMPLETE.")
-    # not working?
     print(f"aggregated_prompt_token_usage: {aggregated_prompt_token_usage}, aggregated_completion_token_usage: {aggregated_completion_token_usage}")
 
 if __name__ == "__main__":

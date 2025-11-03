@@ -105,6 +105,13 @@ const ConfigForm = ({
     onConfigChange('retry_rules', newRetryRules);
   };
 
+  const handleConcurrentBatchSizeChange = (e) => {
+    const value = parseInt(e.target.value);
+    if (value >= 1 && value <= 16) {
+      onConfigChange('concurrent_batch_size', value);
+    }
+  };
+
   if (configLoading) return <p>Loading configuration...</p>;
 
   return (
@@ -127,7 +134,7 @@ const ConfigForm = ({
               onChange={(e) => onConfigChange('base_url', e.target.value)}
               placeholder="e.g., http://localhost:1234/v1"
             />
-            <span className="description-text">Copy from LM Studio developer tab.</span>
+            <span className="description-text">Copy from LM Studio developer tab or llama.cpp console output. Make sure /v1 at end is present, ex. http://127.0.0.1:8080/v1</span>
           </div>
 
           <div>
@@ -159,6 +166,20 @@ const ConfigForm = ({
             </div>
             {modelsError && <p className="error-text">{modelsError}</p>}
           </div>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="concurrent_batch_size">Concurrent Batch Size</label>
+          <input
+            type="number"
+            id="concurrent_batch_size"
+            min="1"
+            max="16"
+            value={config.concurrent_batch_size || 4}
+            onChange={handleConcurrentBatchSizeChange}
+            style={{ width: '100px' }}
+          />
+          <span className="description-text">Batch concurrency if using API with support (i.e. "llama-server -np n"), otherwise leave 1</span>
         </div>
 
         <div className="form-group side-by-side api-key-directory">

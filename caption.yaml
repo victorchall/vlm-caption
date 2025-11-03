@@ -7,6 +7,7 @@ api_key_env_vars:
 model: llama-4-scout-17b-16e-instruct
 api_key: ''
 max_tokens: 16384
+concurrent_batch_size: 1
 system_prompt: You are to analyze an image 
   and provide information based on what is visible in the image. Do not embellish,
   and avoid langauge like 'showcases' or 'features,' preferring to focus on factual
