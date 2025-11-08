@@ -168,6 +168,33 @@ async def process_batch(client: openai.AsyncOpenAI, image_paths: list, conf) -> 
 
     return batch_prompt_tokens, batch_completion_tokens
 
+async def process_image_semaphore(client: openai.AsyncOpenAI, image_path: str, conf, semaphore: asyncio.Semaphore, results_queue: asyncio.Queue):
+    """Process a single image with semaphore control and put results in queue."""
+    async with semaphore:
+        try:
+            start_time = time.perf_counter()
+            caption_text, chat_history, prompt_token_usage, completion_token_usage = await process_image(client, image_path, conf)
+            
+            await save_caption(file_path=image_path, caption_text=caption_text, debug_info=chat_history)
+            
+            processing_time = time.perf_counter() - start_time
+            
+            await results_queue.put({
+                'image_path': image_path,
+                'caption_text': caption_text,
+                'prompt_token_usage': prompt_token_usage,
+                'completion_token_usage': completion_token_usage,
+                'processing_time': processing_time,
+                'success': True
+            })
+            
+        except Exception as e:
+            await results_queue.put({
+                'image_path': image_path,
+                'error': str(e),
+                'success': False
+            })
+
 async def main():
     import hints.registration as registration
     registration._validate_hint_sources()
@@ -182,7 +209,7 @@ async def main():
             conf.system_prompt = f"{global_metadata}\n{conf.system_prompt}"
 
     print(filter_ascii(f" -> SYSTEM PROMPT:\n{conf.system_prompt}\n"))
-    print(filter_ascii(f" -> CONCURRENT BATCH SIZE: {concurrent_batch_size}\n"))
+    print(filter_ascii(f" -> Max concurrency: {concurrent_batch_size}\n"))
 
     api_key = resolve_api_key(conf)
 
@@ -190,32 +217,63 @@ async def main():
 
     aggregated_prompt_token_usage = 0
     aggregated_completion_token_usage = 0
+    total_images_processed = 0
+    total_images_failed = 0
 
-    # Collect images in batches for concurrent processing
-    batch = []
+    semaphore = asyncio.Semaphore(concurrent_batch_size)
+    results_queue = asyncio.Queue()
+    active_tasks = []
+    
+    print(filter_ascii(f"Starting image processing...\n"))
+
     async for image_path in image_walk(conf.base_directory, recursive=conf.recursive, skip_if_txt_exists=conf.skip_if_txt_exists):
         current_task = asyncio.current_task()
         if current_task is not None and current_task.cancelled():
             print("Captioning task was cancelled by user")
+            for task in active_tasks:
+                task.cancel()
             return
 
-        batch.append(image_path)
+        task = asyncio.create_task(process_image_semaphore(client, image_path, conf, semaphore, results_queue))
+        active_tasks.append(task)
 
-        if len(batch) >= concurrent_batch_size:
-            print(filter_ascii(f"\nProcessing batch of {len(batch)} images:"))
-            start_time = time.perf_counter()
+    while active_tasks:
+        try:
+            result = await asyncio.wait_for(results_queue.get(), timeout=0.025)
+            if result['success']:
+                total_images_processed += 1
+                aggregated_prompt_token_usage += result['prompt_token_usage']
+                aggregated_completion_token_usage += result['completion_token_usage']
+                
+                print(filter_ascii(f" --> Processed {result['image_path']}"))
+                print(f"     Time: {result['processing_time']/concurrent_batch_size:.2f}s, Tokens: {result['prompt_token_usage']} prompt, {result['completion_token_usage']} completion")
+            else:
+                total_images_failed += 1
+                print(filter_ascii(f" --> Error processing {result['image_path']}: {result['error']}"))
             
-            batch_prompt_tokens, batch_completion_tokens = await process_batch(client, batch, conf)
-            
-            batch_time = (time.perf_counter() - start_time)
-            print(filter_ascii(f" --> Batch completed in {batch_time:.2f}s, {batch_time/concurrent_batch_size:.2f}s per image"))
-            
-            aggregated_prompt_token_usage += batch_prompt_tokens
-            aggregated_completion_token_usage += batch_completion_tokens
-            batch = []
+            results_queue.task_done()
+        except asyncio.TimeoutError:
+            pass
 
+        active_tasks = [task for task in active_tasks if not task.done()]
+        
+        if not active_tasks:
+            break
+
+    # Process any remaining results
+    while not results_queue.empty():
+        result = await results_queue.get()
+        if result['success']:
+            total_images_processed += 1
+            aggregated_prompt_token_usage += result['prompt_token_usage']
+            aggregated_completion_token_usage += result['completion_token_usage']
+        else:
+            total_images_failed += 1
+        results_queue.task_done()
 
     print(F" -> JOB COMPLETE.")
+    print(f"Total images processed: {total_images_processed}")
+    print(f"Total images failed: {total_images_failed}")
     print(f"aggregated_prompt_token_usage: {aggregated_prompt_token_usage}, aggregated_completion_token_usage: {aggregated_completion_token_usage}")
 
 if __name__ == "__main__":
