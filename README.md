@@ -62,7 +62,7 @@ All settings are configured through `caption.yaml` when using the CLI version.  
 
 ### API Configuration
 
-Most of this is covered in [API Service Setup](API_Service_Setup) for local users.
+Most of this is covered in [API Service Setup](API_SERVICE_SETUP.MD) for local users.
 
 ### CLI 
 If you just want to use the CLI, the entire app is driven by `caption.yaml`. Edit then run the CLI by running `python caption_openai.py`.  
@@ -183,4 +183,31 @@ Mostly self explanatory.  Paste in the path to the directory you want processed 
 
     See [HINTSOURCES.md](HINTSOURCES.md) for more information.
 
-- **Batch concurrency**: If you use a VLM host that support batch concurrency such as llama.cpp (via -np n arg) you can potentially increase speed. This is not supported by LM Studio.  Example command: `llama-server -np 4 -c 32768 --mmproj "mmproj-Qwen3-VL-32B-Instruct-F16.gguf" --model "Qwen3-VL-32B-Instruct-Q4_K_M.gguf" -dev cuda0 --top-k 30 --top-p 0.95 --min-p 0.05 --temp 0.5` would launch Qwen3VL 32B with four concurrent processes (-np 4) each with 8192 tokens (32768/4) of context for each of the 4 slots.  This requires additional processing power and an increase of total context size (`-np 4 -c 32768` instead of `-np 1 -c 8192` as an example), but may increase total token generation speeds by utilizing batch processing.  _This feature does not utilize the OpenAI jsonl batch API suitable for commercial APIs to save on costs, but should work to speed up rates._
+- **Batch concurrency**: If you use a VLM host that supports sequence concurrent serving such as llama.cpp (via `-np N` arg) or vllm (via `-max-num-seqs N` arg) you can increase overall throughput by configuring the host and VLM Caption to operate with concurrent requests. *This is not supported by LM Studio, so if you care about throughput of bulk process captioning, llama.cpp or even better vllm is suggested as your host.*  
+
+Generally, the higher the concurrency, the more memory is required (larger context and kv cache) but the higher the aggregate token throughput.  This setting can increase overall processing rates by 2-8x on consumer GPUs and possibly far more on workstation or datacenter grade hardware.
+
+This is not to be confused with "batch processing" in the host documentation, which is means batch processing of prefill tokens.  However, the concurrency setting here is "batch" for the decode process (token prediction).
+
+If you have multiple GPUs, consider using VLLM which supports tensor parallel as well.
+
+Example vllm serve command to serve 16 parallel requests, using 2x3090 GPUs with tensor parallel:
+
+```bash
+#!/bin/bash
+vllm serve QuantTrio/Qwen3-VL-32B-Instruct-AWQ \
+  --dtype auto \
+  --limit-mm-per-prompt '{"video":0,"image":1}' \
+  --media-io-kwargs '{"image":{"width":768,"height":768}}' \
+  --max-model-len '64K' \
+  --max-num-seqs 16 \
+  --max-num-batched-tokens 256 \
+  --tensor-parallel-size 2 \
+  --override-generation-config '{"temperature": 0.5,"top_p":0.95,"min_p":0.05,"top-k": 30}'
+```
+
+Example llama.cpp serving for 8 parallel requests, context `-c 32768` is divided across them.
+```bash
+llama-server -np 8 -c 32768 --mmproj "mmproj-Qwen3-VL-32B-Instruct-F16.gguf" --model "Qwen3-VL-32B-Instruct-Q4_K_M.gguf" -dev cuda0 --top-k 30 --top-p 0.95 --min-p 0.05 --temp 0.5
+```
+VLM Caption has a cap on concurrent batch size it will dispatch to the host set in the UI or caption.yaml.  This should be set equal or higher than the host configuration to ensure the host is saturated.

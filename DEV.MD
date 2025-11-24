@@ -22,11 +22,12 @@ Examples of good PRs:
 - Add optional parquet output option (instead of or optional with) existing .txt saving.
 - Add a hint source that sources data using a sqllite client, with a generalized query builder, configuration options, or at least coded in an extensible way.
 - Bug fixes that do not break existing functionality.
+- Async optimization
 
 PRs that might raise an eyebrow:
 - Add a hint source with hard-coded queries specific to your environment (please abstract, add configuration options, or make it extensible).
 - Anything that adds pytorch (too big!)
-- Change the output from .txt to a single .json and break the existing functionality.
+- Change the output from .txt to a single .json and breaks the existing functionality.
 
 Before creating a PR consider:
 - Does this change increase the app release size substantially? 
@@ -92,6 +93,10 @@ graph TD
 The UI uses the flask API to read/write `caption.yaml` on disk for configuration. Then when `Run Captioning` is clicked in the UI, it calls the flash API `api/run-stream` with an empty object which in turn calls the `main()` function in  `caption_openai.py`. `main()` reads the `caption.yaml` configuration from disk and executes the core functionality.  Server-side events stream the console output back to the UI.
 
 `caption_openai.py main()` loops over all the images in the configured directory and calls the external (to this app) hosted OpenAI-compatible API to retrieve chat completions for each prompt, then writes the final captionn on disk in .txt next to each image.
+
+## Concurrency and async
+
+VLM Caption uses an asyncio event loop at its core, and all disk and network operations use async/await.  The batch concurrency mechanism creates tasks to dispatch requests immediately to the host once the image is read, a semaphore limits the total in-flight requests, and tasks are monitored for completion in a loop which then saves the result to disk.
 
 ## Setup and run
 
