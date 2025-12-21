@@ -13,6 +13,14 @@ import logging
 from typing import Tuple, Dict, List
 from rules.summary_retry import run_summary_retry_rules
 
+def filter_caption(caption:str) -> str:
+    """
+    Removes a mistake in GLM 4.6V that leads to erroneous bbox related tokens
+    being added to output despite not asking for grounding/location.
+    """
+    caption = caption.replace("<|begin_of_box|>","")
+    caption = caption.replace("<|end_of_box|>","")
+    return caption
 
 def filter_ascii(input_str):
     """
@@ -142,38 +150,13 @@ async def process_image(client: openai.AsyncOpenAI, image_path, conf) -> Tuple[s
     messages = remove_base64_image(messages)
     return final_summary_response, json.dumps(messages, indent=2), prompt_tokens_usage, completion_tokens_usage
 
-async def process_batch(client: openai.AsyncOpenAI, image_paths: list, conf) -> Tuple[int, int]:
-    """Process a batch of images concurrently and return aggregated token usage."""
-    tasks = [process_image(client, image_path, conf) for image_path in image_paths]
-    
-    # Process all images in the batch concurrently
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-    batch_prompt_tokens = 0
-    batch_completion_tokens = 0
-
-    for i, result in enumerate(results):
-        if isinstance(result, Exception):
-            print(filter_ascii(f"Error processing {image_paths[i]}: {result}"))
-        else:
-            caption_text, chat_history, prompt_token_usage, completion_token_usage = result # type: ignore
-
-            await save_caption(file_path=image_paths[i], caption_text=caption_text, debug_info=chat_history)
-
-            batch_prompt_tokens += prompt_token_usage
-            batch_completion_tokens += completion_token_usage
-
-            print(filter_ascii(f" --> Processed {image_paths[i]}"))
-            print(f" --> prompt_token_usage: {prompt_token_usage}, completion_token_usage: {completion_token_usage}")
-
-    return batch_prompt_tokens, batch_completion_tokens
-
 async def process_image_semaphore(client: openai.AsyncOpenAI, image_path: str, conf, semaphore: asyncio.Semaphore, results_queue: asyncio.Queue):
     """Process a single image with semaphore control and put results in queue."""
     async with semaphore:
         try:
             start_time = time.perf_counter()
             caption_text, chat_history, prompt_token_usage, completion_token_usage = await process_image(client, image_path, conf)
+            caption_text = filter_caption(caption_text)
             
             await save_caption(file_path=image_path, caption_text=caption_text, debug_info=chat_history)
             
