@@ -198,7 +198,7 @@ Example vllm serve command to serve 16 parallel requests, using 2x3090 GPUs with
 vllm serve QuantTrio/Qwen3-VL-32B-Instruct-AWQ \
   --dtype auto \
   --limit-mm-per-prompt '{"video":0,"image":1}' \
-  --media-io-kwargs '{"image":{"width":768,"height":768}}' \
+  --mm-processor-kwargs '{"min_pixels": 3136, "max_pixels": 589824}' \
   --max-model-len '64K' \
   --max-num-seqs 16 \
   --max-num-batched-tokens 256 \

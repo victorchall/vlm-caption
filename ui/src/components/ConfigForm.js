@@ -97,7 +97,7 @@ const ConfigForm = ({
 
   const handleConcurrentBatchSizeChange = (e) => {
     const value = parseInt(e.target.value);
-    if (value >= 1 && value <= 16) {
+    if (value >= 1 && value <= 32) {
       onConfigChange('concurrent_batch_size', value);
     }
   };
