@@ -1,5 +1,6 @@
 import openai
 from typing import List, Tuple
+from response_filters import filter_thinking
 
 async def run_summary_retry_rules(client:openai.AsyncClient, 
                                   conf, 
@@ -55,6 +56,7 @@ async def run_summary_retry_rules(client:openai.AsyncClient,
             completion_tokens_usage += event.usage.completion_tokens
             prompt_tokens_usage += event.usage.prompt_tokens
 
+    response_text = filter_thinking(response_text)
     rejections = run_rules(retry_rules, response_text)
 
     if len(rejections.keys()) > 0:

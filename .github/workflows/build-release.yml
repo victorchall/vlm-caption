@@ -9,8 +9,28 @@ on:
       - main
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: python -m pytest tests/ -v
+
   build-cli:
     runs-on: windows-latest
+    needs: [test]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,6 +71,7 @@ jobs:
 
   build-electron:
     runs-on: windows-latest
+    needs: [test]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

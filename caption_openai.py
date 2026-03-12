@@ -8,39 +8,11 @@ import time
 from omegaconf import OmegaConf
 import os
 from file_utils.file_access import image_walk, save_caption
+from response_filters import filter_thinking, filter_caption, filter_ascii, remove_base64_image
 from hints.hint_sources import get_hints
 import logging
 from typing import Tuple, Dict, List
 from rules.summary_retry import run_summary_retry_rules
-
-def filter_caption(caption:str) -> str:
-    """
-    Removes a mistake in GLM 4.6V that leads to erroneous bbox related tokens
-    being added to output despite not asking for grounding/location.
-    """
-    caption = caption.replace("<|begin_of_box|>","")
-    caption = caption.replace("<|end_of_box|>","")
-    return caption
-
-def filter_ascii(input_str):
-    """
-    Removes any characters outside the standard 7-bit ASCII range (0–127).
-    Currently to deal with issues when std out is streamed to GUI.
-    """
-    return ''.join(
-        ch if ord(ch) <= 126 else "?"
-        for ch in input_str
-    )
-
-def remove_base64_image(messages: List) -> List:
-    """ Removes the base64 image from a messages for the sake of logging """
-    for message in messages:
-        for content_item in message.get("content", []):
-            if (isinstance(content_item, dict)
-                and content_item.get("type") == "image_url"
-                and isinstance(content_item.get("image_url"), dict)):
-                    content_item["image_url"]["url"] = "...removed..."
-    return messages
 
 def resolve_api_key(config):
     api_key_value = config.api_key.strip()
@@ -105,6 +77,7 @@ async def process_image(client: openai.AsyncOpenAI, image_path, conf) -> Tuple[s
             completion_tokens_usage += event.usage.completion_tokens
             prompt_tokens_usage += event.usage.prompt_tokens
 
+    response_text = filter_thinking(response_text)
     messages.append({"role": "assistant", "content": [{"type": "text", "text": response_text}]})
     i=0
     save_debug_task = asyncio.create_task(write_debug_messages(messages, i))
@@ -130,6 +103,7 @@ async def process_image(client: openai.AsyncOpenAI, image_path, conf) -> Tuple[s
                 if event.usage:
                     completion_tokens_usage += event.usage.completion_tokens
                     prompt_tokens_usage += event.usage.prompt_tokens
+            response_text = filter_thinking(response_text)
             messages.append({"role": "assistant", "content": [{"type": "text", "text": response_text}]})
             save_debug_task = asyncio.create_task(write_debug_messages(messages, i))
             i += 1
