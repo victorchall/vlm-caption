@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.x'
 
@@ -33,10 +33,10 @@ jobs:
     needs: [test]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.x'
 
@@ -64,7 +64,7 @@ jobs:
           powershell Compress-Archive -Path vlm-caption-cli\* -DestinationPath vlm-caption-cli-v${{ steps.version.outputs.VERSION_TAG }}.${{ github.run_number }}.zip
 
       - name: Upload CLI Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vlm-caption-cli
           path: vlm-caption-cli-v${{ steps.version.outputs.VERSION_TAG }}.${{ github.run_number }}.zip
@@ -74,15 +74,15 @@ jobs:
     needs: [test]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.x'
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
 
@@ -115,7 +115,7 @@ jobs:
           npx electron-builder --win --publish never
 
       - name: Upload Electron Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vlm-caption-electron
           path: ui/dist/*.exe
@@ -128,18 +128,18 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup MSBuild and Windows SDK
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
 
       - name: Download CLI Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: vlm-caption-cli
 
       - name: Download Electron Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: vlm-caption-electron
 
