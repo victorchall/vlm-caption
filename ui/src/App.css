@@ -194,6 +194,11 @@
   font-weight: bold;
 }
 
+.form-group textarea {
+  overflow: hidden;
+  resize: vertical;
+}
+
 .form-group input:focus {
   outline: none;
   border-color: #007bff;

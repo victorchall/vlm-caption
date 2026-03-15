@@ -4,7 +4,7 @@ from typing import AsyncGenerator
 import asyncio
 
 # Supported image extensions
-IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp')
+IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp', '.avif')
 
 async def image_walk(base_directory: str, recursive: bool, skip_if_txt_exists: bool) -> AsyncGenerator[str, None]:
     """

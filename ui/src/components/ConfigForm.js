@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useCallback } from 'react';
 
 const ConfigForm = ({
   config,
@@ -34,6 +34,13 @@ const ConfigForm = ({
       onConfigChange('global_metadata_file', path);
     }
   };
+
+  const autoResize = useCallback((el) => {
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 'px';
+    }
+  }, []);
 
   const handlePromptChange = (index, value) => {
     const newPrompts = [...config.prompts];
@@ -271,9 +278,10 @@ const ConfigForm = ({
             type="text"
             id="system_prompt"
             value={config.system_prompt}
-            onChange={(e) => onConfigChange('system_prompt', e.target.value)}
+            onChange={(e) => { onConfigChange('system_prompt', e.target.value); autoResize(e.target); }}
             placeholder="You are an expert image analyzer..."
             rows="3"
+            ref={(el) => autoResize(el)}
           />
           <span className="description-text">(Optional) General directives to the VLM for all steps.</span>
         </div>
@@ -285,9 +293,10 @@ const ConfigForm = ({
             <div key={index} className="prompt-item">
               <textarea
                 value={prompt}
-                onChange={(e) => handlePromptChange(index, e.target.value)}
+                onChange={(e) => { handlePromptChange(index, e.target.value); autoResize(e.target); }}
                 placeholder={`Prompt ${index + 1}`}
                 rows="3"
+                ref={(el) => autoResize(el)}
               />
               <button
                 type="button"
