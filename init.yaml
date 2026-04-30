@@ -32,4 +32,5 @@ hint_sources:
 - metadata
 base_directory: C:\my_project\to_be_captioned
 recursive: true
-skip_if_txt_exists: true
+skip_if_caption_exists: true
+output_format: txt

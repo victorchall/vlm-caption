@@ -18,7 +18,8 @@ function App() {
     recursive: false,
     hint_sources: [],
     global_metadata_file: '',
-    skip_if_txt_exists: false,
+    skip_if_caption_exists: false,
+    output_format: 'txt',
     concurrent_batch_size: 1
   });
   const [configLoading, setConfigLoading] = useState(false);
@@ -107,7 +108,10 @@ function App() {
           recursive: data.config.recursive || false,
           hint_sources: data.config.hint_sources || [],
           global_metadata_file: data.config.global_metadata_file || '',
-          skip_if_txt_exists: data.config.skip_if_txt_exists || false,
+          skip_if_caption_exists: (data.config.skip_if_caption_exists !== undefined
+            ? data.config.skip_if_caption_exists
+            : data.config.skip_if_txt_exists) || false,
+          output_format: data.config.output_format || 'txt',
           concurrent_batch_size: data.config.concurrent_batch_size || 1
         };
         setConfig(newConfig);
@@ -149,7 +153,8 @@ function App() {
             recursive: config.recursive,
             hint_sources: config.hint_sources,
             global_metadata_file: config.global_metadata_file,
-            skip_if_txt_exists: config.skip_if_txt_exists,
+            skip_if_caption_exists: config.skip_if_caption_exists,
+            output_format: config.output_format,
             concurrent_batch_size: config.concurrent_batch_size
           }
         }),

@@ -179,6 +179,33 @@ const ConfigForm = ({
           <span className="description-text">Batch concurrency if using API with support (i.e. "llama-server -np n"), otherwise leave 1</span>
         </div>
 
+        <div className="form-group">
+          <label>Output Format</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '5px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <input
+                type="radio"
+                name="output_format"
+                value="txt"
+                checked={(config.output_format || 'txt') === 'txt'}
+                onChange={(e) => onConfigChange('output_format', e.target.value)}
+              />
+              .txt sidecar (one caption per image, overwrites)
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <input
+                type="radio"
+                name="output_format"
+                value="jsonl"
+                checked={config.output_format === 'jsonl'}
+                onChange={(e) => onConfigChange('output_format', e.target.value)}
+              />
+              .jsonl sidecar (multiple captions per image, appends)
+            </label>
+          </div>
+          <span className="description-text">jsonl entries are <code>{'{"text", "model", "prompt"}'}</code>. With "Skip if caption exists" checked, jsonl mode skips only if the same model + prompts already produced an entry.</span>
+        </div>
+
         <div className="form-group side-by-side api-key-directory">
           <div>
             <label htmlFor="api_key">API Key</label>
@@ -204,13 +231,13 @@ const ConfigForm = ({
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <label htmlFor="skip_if_txt_exists" style={{ marginRight: '40px' }}>Skip image if .txt exists</label>
+                <label htmlFor="skip_if_caption_exists" style={{ marginRight: '40px' }}>Skip image if caption exists</label>
                 <input
                   type="checkbox"
-                  id="skip_if_txt_exists"
-                  className="skip-if-txt-exists-checkbox"
-                  checked={config.skip_if_txt_exists}
-                  onChange={(e) => onConfigChange('skip_if_txt_exists', e.target.checked)}
+                  id="skip_if_caption_exists"
+                  className="skip-if-caption-exists-checkbox"
+                  checked={config.skip_if_caption_exists}
+                  onChange={(e) => onConfigChange('skip_if_caption_exists', e.target.checked)}
                 />
               </div>
             </div>

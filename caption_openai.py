@@ -7,7 +7,7 @@ import aiofiles
 import time
 from omegaconf import OmegaConf
 import os
-from file_utils.file_access import image_walk, save_caption
+from file_utils.file_access import image_walk, save_caption, concat_prompts, OUTPUT_FORMAT_TXT, OUTPUT_FORMAT_JSONL
 from response_filters import filter_thinking, filter_caption, filter_ascii, remove_base64_image
 from hints.hint_sources import get_hints
 import logging
@@ -131,8 +131,16 @@ async def process_image_semaphore(client: openai.AsyncOpenAI, image_path: str, c
             start_time = time.perf_counter()
             caption_text, chat_history, prompt_token_usage, completion_token_usage = await process_image(client, image_path, conf)
             caption_text = filter_caption(caption_text)
-            
-            await save_caption(file_path=image_path, caption_text=caption_text, debug_info=chat_history)
+
+            output_format = conf.get("output_format", OUTPUT_FORMAT_TXT)
+            await save_caption(
+                file_path=image_path,
+                caption_text=caption_text,
+                debug_info=chat_history,
+                output_format=output_format,
+                model=conf.get("model", ""),
+                concat_prompt=concat_prompts(list(conf.get("prompts", []))),
+            )
             
             processing_time = time.perf_counter() - start_time
             
@@ -183,7 +191,18 @@ async def main():
     
     print(filter_ascii(f"Starting image processing...\n"))
 
-    async for image_path in image_walk(conf.base_directory, recursive=conf.recursive, skip_if_txt_exists=conf.skip_if_txt_exists):
+    output_format = conf.get("output_format", OUTPUT_FORMAT_TXT)
+    skip_if_caption_exists = conf.get("skip_if_caption_exists", conf.get("skip_if_txt_exists", False))
+    concat_prompt = concat_prompts(list(conf.get("prompts", [])))
+
+    async for image_path in image_walk(
+        conf.base_directory,
+        recursive=conf.recursive,
+        skip_if_caption_exists=skip_if_caption_exists,
+        output_format=output_format,
+        model=conf.get("model", ""),
+        concat_prompt=concat_prompt,
+    ):
         current_task = asyncio.current_task()
         if current_task is not None and current_task.cancelled():
             print("Captioning task was cancelled by user")
