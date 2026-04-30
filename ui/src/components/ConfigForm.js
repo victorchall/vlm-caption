@@ -181,28 +181,28 @@ const ConfigForm = ({
 
         <div className="form-group">
           <label>Output Format</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '5px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <input
-                type="radio"
-                name="output_format"
-                value="txt"
-                checked={(config.output_format || 'txt') === 'txt'}
-                onChange={(e) => onConfigChange('output_format', e.target.value)}
-              />
-              .txt sidecar (one caption per image, overwrites)
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <input
-                type="radio"
-                name="output_format"
-                value="jsonl"
-                checked={config.output_format === 'jsonl'}
-                onChange={(e) => onConfigChange('output_format', e.target.value)}
-              />
-              .jsonl sidecar (multiple captions per image, appends)
-            </label>
-          </div>
+          <label style={{ display: 'block', marginTop: '5px' }}>
+            <input
+              type="radio"
+              name="output_format"
+              value="txt"
+              checked={(config.output_format || 'txt') === 'txt'}
+              onChange={(e) => onConfigChange('output_format', e.target.value)}
+              style={{ marginRight: '8px' }}
+            />
+            .txt sidecar (one caption per image, overwrites)
+          </label>
+          <label style={{ display: 'block', marginTop: '4px' }}>
+            <input
+              type="radio"
+              name="output_format"
+              value="jsonl"
+              checked={config.output_format === 'jsonl'}
+              onChange={(e) => onConfigChange('output_format', e.target.value)}
+              style={{ marginRight: '8px' }}
+            />
+            .jsonl sidecar (multiple captions per image, appends)
+          </label>
           <span className="description-text">jsonl entries are <code>{'{"text", "model", "prompt"}'}</code>. With "Skip if caption exists" checked, jsonl mode skips only if the same model + prompts already produced an entry.</span>
         </div>
 
