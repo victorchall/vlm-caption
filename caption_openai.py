@@ -125,40 +125,43 @@ async def process_image(client: openai.AsyncOpenAI, image_path, conf) -> Tuple[s
     return final_summary_response, json.dumps(messages, indent=2), prompt_tokens_usage, completion_tokens_usage
 
 async def process_image_semaphore(client: openai.AsyncOpenAI, image_path: str, conf, semaphore: asyncio.Semaphore, results_queue: asyncio.Queue):
-    """Process a single image with semaphore control and put results in queue."""
-    async with semaphore:
-        try:
-            start_time = time.perf_counter()
-            caption_text, chat_history, prompt_token_usage, completion_token_usage = await process_image(client, image_path, conf)
-            caption_text = filter_caption(caption_text)
+    """Process a single image and put results in queue. The caller must have acquired
+    the semaphore before scheduling this task; we release it here on completion so that
+    the producer loop applies backpressure and the in-flight task set stays bounded."""
+    try:
+        start_time = time.perf_counter()
+        caption_text, chat_history, prompt_token_usage, completion_token_usage = await process_image(client, image_path, conf)
+        caption_text = filter_caption(caption_text)
 
-            output_format = conf.get("output_format", OUTPUT_FORMAT_TXT)
-            await save_caption(
-                file_path=image_path,
-                caption_text=caption_text,
-                debug_info=chat_history,
-                output_format=output_format,
-                model=conf.get("model", ""),
-                concat_prompt=concat_prompts(list(conf.get("prompts", []))),
-            )
-            
-            processing_time = time.perf_counter() - start_time
-            
-            await results_queue.put({
-                'image_path': image_path,
-                'caption_text': caption_text,
-                'prompt_token_usage': prompt_token_usage,
-                'completion_token_usage': completion_token_usage,
-                'processing_time': processing_time,
-                'success': True
-            })
-            
-        except Exception as e:
-            await results_queue.put({
-                'image_path': image_path,
-                'error': str(e),
-                'success': False
-            })
+        output_format = conf.get("output_format", OUTPUT_FORMAT_TXT)
+        await save_caption(
+            file_path=image_path,
+            caption_text=caption_text,
+            debug_info=chat_history,
+            output_format=output_format,
+            model=conf.get("model", ""),
+            concat_prompt=concat_prompts(list(conf.get("prompts", []))),
+        )
+
+        processing_time = time.perf_counter() - start_time
+
+        await results_queue.put({
+            'image_path': image_path,
+            'caption_text': caption_text,
+            'prompt_token_usage': prompt_token_usage,
+            'completion_token_usage': completion_token_usage,
+            'processing_time': processing_time,
+            'success': True
+        })
+
+    except Exception as e:
+        await results_queue.put({
+            'image_path': image_path,
+            'error': str(e),
+            'success': False
+        })
+    finally:
+        semaphore.release()
 
 async def main():
     import hints.registration as registration
@@ -210,8 +213,31 @@ async def main():
                 task.cancel()
             return
 
+        # Apply backpressure on the producer: block here until a slot is free, so
+        # we never stage more than concurrent_batch_size pending tasks at once.
+        await semaphore.acquire()
         task = asyncio.create_task(process_image_semaphore(client, image_path, conf, semaphore, results_queue))
         active_tasks.append(task)
+
+        # Opportunistically drain finished tasks and queued results so neither the
+        # active_tasks list nor results_queue grows for the duration of the walk.
+        if len(active_tasks) >= concurrent_batch_size:
+            active_tasks = [t for t in active_tasks if not t.done()]
+        while True:
+            try:
+                result = results_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+            if result['success']:
+                total_images_processed += 1
+                aggregated_prompt_token_usage += result['prompt_token_usage']
+                aggregated_completion_token_usage += result['completion_token_usage']
+                print(filter_ascii(f" --> Processed {result['image_path']}"))
+                print(f"     Time: {result['processing_time']/concurrent_batch_size:.2f}s, Tokens: {result['prompt_token_usage']} prompt, {result['completion_token_usage']} completion")
+            else:
+                total_images_failed += 1
+                print(filter_ascii(f" --> Error processing {result['image_path']}: {result['error']}"))
+            results_queue.task_done()
 
     while active_tasks:
         try:
