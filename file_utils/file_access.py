@@ -56,6 +56,28 @@ def caption_exists(image_path: str, output_format: str, model: str = "", concat_
     return os.path.exists(_txt_path_for(image_path))
 
 
+def _scan_dir(base_directory: str):
+    """Synchronous scandir snapshot. Returns a list of (path, is_dir, is_file)
+    tuples and releases the directory handle before returning so this is safe
+    to invoke via asyncio.to_thread. Uses scandir so each entry's type comes
+    from the directory enumeration itself — one round-trip per directory on
+    SMB instead of an extra stat per entry."""
+    results = []
+    try:
+        with os.scandir(base_directory) as it:
+            for entry in it:
+                try:
+                    is_dir = entry.is_dir()
+                    is_file = entry.is_file()
+                except OSError:
+                    is_dir = False
+                    is_file = False
+                results.append((entry.path, is_dir, is_file))
+    except Exception as e:
+        print(f"Error accessing directory {base_directory}: {e}")
+    return results
+
+
 async def image_walk(
     base_directory: str,
     recursive: bool,
@@ -69,34 +91,34 @@ async def image_walk(
 
     When skip_if_caption_exists is True, images that already have a matching
     caption (per output_format / model / concat_prompt) are skipped.
+
+    All blocking filesystem I/O is offloaded to a thread so the event loop
+    stays responsive — over SMB this lets in-flight caption tasks make
+    progress while the walker is waiting on directory listings.
     """
-    try:
-        entries = os.listdir(base_directory)  # TODO: this is still blocking...
+    entries = await asyncio.to_thread(_scan_dir, base_directory)
 
-        for entry in entries:
-            current_path = os.path.join(base_directory, entry)
-
-            if recursive and os.path.isdir(current_path):
-                async for image_path in image_walk(
-                    base_directory=current_path,
-                    recursive=True,
-                    skip_if_caption_exists=skip_if_caption_exists,
-                    output_format=output_format,
-                    model=model,
-                    concat_prompt=concat_prompt,
-                ):
-                    yield image_path
-            elif not recursive and os.path.isdir(current_path):
-                continue
-            elif os.path.isfile(current_path) and current_path.lower().endswith(IMAGE_EXTENSIONS):
-                if skip_if_caption_exists and caption_exists(
-                    current_path, output_format, model=model, concat_prompt=concat_prompt
-                ):
+    for current_path, is_dir, is_file in entries:
+        if recursive and is_dir:
+            async for image_path in image_walk(
+                base_directory=current_path,
+                recursive=True,
+                skip_if_caption_exists=skip_if_caption_exists,
+                output_format=output_format,
+                model=model,
+                concat_prompt=concat_prompt,
+            ):
+                yield image_path
+        elif not recursive and is_dir:
+            continue
+        elif is_file and current_path.lower().endswith(IMAGE_EXTENSIONS):
+            if skip_if_caption_exists:
+                exists = await asyncio.to_thread(
+                    caption_exists, current_path, output_format, model, concat_prompt
+                )
+                if exists:
                     continue
-                yield current_path
-
-    except Exception as e:
-        print(f"Error accessing directory {base_directory}: {e}")
+            yield current_path
 
 
 async def save_caption(
